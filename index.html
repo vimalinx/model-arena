@@ -14,52 +14,47 @@
   * { margin:0; padding:0; box-sizing:border-box; }
   body { background:var(--bg); color:var(--text); font-family:-apple-system,'Segoe UI',Helvetica,Arial,sans-serif; line-height:1.6; }
 
-  /* Nav */
   nav { position:sticky; top:0; z-index:100; background:rgba(13,17,23,0.95); backdrop-filter:blur(12px); border-bottom:1px solid var(--border); padding:12px 24px; display:flex; align-items:center; gap:24px; }
   nav .logo { font-size:18px; font-weight:700; color:var(--accent); letter-spacing:-0.5px; }
   nav .links { display:flex; gap:16px; }
   nav a { color:var(--text-dim); text-decoration:none; font-size:14px; transition:color 0.2s; }
   nav a:hover { color:var(--text); }
 
-  /* Hero */
   .hero { text-align:center; padding:60px 24px 40px; }
   .hero h1 { font-size:42px; font-weight:800; letter-spacing:-1px; margin-bottom:12px; background:linear-gradient(135deg,var(--accent),#a371f7); -webkit-background-clip:text; -webkit-text-fill-color:transparent; }
   .hero p { color:var(--text-dim); font-size:18px; max-width:600px; margin:0 auto; }
 
-  /* Section */
   .section { max-width:1200px; margin:0 auto; padding:40px 24px; }
   .section h2 { font-size:28px; font-weight:700; margin-bottom:8px; }
   .section .subtitle { color:var(--text-dim); margin-bottom:24px; font-size:15px; }
 
-  /* Prompt card */
   .prompt-card { background:var(--surface); border:1px solid var(--border); border-radius:var(--radius); padding:16px 20px; margin-bottom:32px; font-size:14px; }
   .prompt-card .label { color:var(--text-dim); font-size:12px; text-transform:uppercase; letter-spacing:1px; margin-bottom:8px; }
   .prompt-card code { display:block; white-space:pre-wrap; font-family:'JetBrains Mono','Fira Code',monospace; font-size:13px; }
 
-  /* Result grid */
   .results { display:grid; grid-template-columns:repeat(auto-fit,minmax(340px,1fr)); gap:20px; }
   .card { background:var(--surface); border:1px solid var(--border); border-radius:var(--radius); overflow:hidden; transition:transform 0.2s,border-color 0.2s; }
   .card:hover { transform:translateY(-2px); border-color:var(--accent); }
-  .card .thumb { width:100%; aspect-ratio:16/9; object-fit:cover; border-bottom:1px solid var(--border); background:#000; }
+  .card .thumb { width:100%; aspect-ratio:16/9; object-fit:cover; border-bottom:1px solid var(--border); background:#000; display:block; }
   .card .body { padding:16px 20px; }
   .card .badge { display:inline-block; font-size:11px; padding:2px 8px; border-radius:12px; font-weight:600; margin-bottom:8px; }
   .badge.green { background:rgba(63,185,80,0.15); color:var(--green); }
   .badge.yellow { background:rgba(210,153,34,0.15); color:var(--yellow); }
-  .badge.red { background:rgba(248,81,73,0.15); color:var(--red); }
   .card h3 { font-size:16px; font-weight:600; margin-bottom:4px; }
   .card .model { color:var(--accent); font-size:13px; font-family:monospace; margin-bottom:12px; }
   .card .stats { display:grid; grid-template-columns:1fr 1fr; gap:4px 12px; font-size:13px; }
   .card .stats .k { color:var(--text-dim); }
   .card .stats .v { text-align:right; }
 
-  /* Comparison table */
   .cmp-table { width:100%; border-collapse:collapse; font-size:14px; margin-top:16px; }
   .cmp-table th, .cmp-table td { padding:10px 14px; text-align:left; border-bottom:1px solid var(--border); }
   .cmp-table th { color:var(--text-dim); font-weight:600; font-size:12px; text-transform:uppercase; letter-spacing:0.5px; }
   .cmp-table td.yes { color:var(--green); } .cmp-table td.no { color:var(--red); }
   .cmp-table tr:hover { background:rgba(255,255,255,0.03); }
 
-  /* Footer */
+  .gallery { display:grid; grid-template-columns:repeat(auto-fit,minmax(240px,1fr)); gap:12px; margin-top:16px; }
+  .gallery img { width:100%; border-radius:var(--radius); border:1px solid var(--border); }
+
   footer { text-align:center; padding:40px; color:var(--text-dim); font-size:13px; border-top:1px solid var(--border); margin-top:40px; }
   footer a { color:var(--accent); text-decoration:none; }
 </style>
@@ -67,7 +62,7 @@
 <body>
 
 <nav>
-  <span class="logo">⚔️ Model Arena</span>
+  <span class="logo">Model Arena</span>
   <div class="links">
     <a href="#minecraft">Minecraft</a>
     <a href="#apartment">Apartment 3D</a>
@@ -80,9 +75,9 @@
   <p>Same prompt. Multiple AI models. Side-by-side comparison.<br>Real outputs, real browser testing, real evidence.</p>
 </div>
 
-<!-- ==================== MINECRAFT ==================== -->
+<!-- MINECRAFT -->
 <div class="section" id="minecraft">
-  <h2>🎮 Minecraft Single-HTML</h2>
+  <h2>Minecraft Single-HTML</h2>
   <p class="subtitle">One Chinese prompt → three DeepSeek V4 Pro runs via different channels</p>
 
   <div class="prompt-card">
@@ -91,17 +86,16 @@
   </div>
 
   <div class="results">
-    <!-- Official key -->
     <div class="card">
       <img class="thumb" src="assets/minecraft/official-key.png" alt="Official DeepSeek">
       <div class="body">
-        <span class="badge green">✅ Runs first try</span>
+        <span class="badge green">Runs first try</span>
         <h3>DeepSeek V4 Pro</h3>
         <div class="model">deepseek/deepseek-v4-pro (official API)</div>
         <div class="stats">
           <span class="k">Lines</span><span class="v">1005</span>
           <span class="k">Block types</span><span class="v">9</span>
-          <span class="k">Day/night</span><span class="v">✅</span>
+          <span class="k">Day/night</span><span class="v">yes</span>
           <span class="k">Reasoning tokens</span><span class="v">6,345</span>
           <span class="k">Gen time</span><span class="v">~5 min</span>
           <span class="k">Human fixes</span><span class="v">0</span>
@@ -109,17 +103,16 @@
       </div>
     </div>
 
-    <!-- Alt key -->
     <div class="card">
       <img class="thumb" src="assets/minecraft/altkey.png" alt="Alt key DeepSeek">
       <div class="body">
-        <span class="badge green">✅ Runs first try</span>
+        <span class="badge green">Runs first try</span>
         <h3>DeepSeek V4 Pro</h3>
         <div class="model">deepseek/deepseek-v4-pro (alt key)</div>
         <div class="stats">
           <span class="k">Lines</span><span class="v">907</span>
           <span class="k">Block types</span><span class="v">14</span>
-          <span class="k">Day/night</span><span class="v">✅</span>
+          <span class="k">Day/night</span><span class="v">yes</span>
           <span class="k">Reasoning tokens</span><span class="v">5,732</span>
           <span class="k">Gen time</span><span class="v">~6.5 min</span>
           <span class="k">Human fixes</span><span class="v">0</span>
@@ -127,17 +120,16 @@
       </div>
     </div>
 
-    <!-- OpenCode Go -->
     <div class="card">
       <img class="thumb" src="assets/minecraft/opencodego.png" alt="OpenCode Go DeepSeek">
       <div class="body">
-        <span class="badge yellow">⚠️ 1 syntax fix needed</span>
+        <span class="badge yellow">1 syntax fix needed</span>
         <h3>DeepSeek V4 Pro</h3>
         <div class="model">opencodego/deepseek-v4-pro</div>
         <div class="stats">
           <span class="k">Lines</span><span class="v">~540</span>
           <span class="k">Block types</span><span class="v">5</span>
-          <span class="k">Day/night</span><span class="v">❌</span>
+          <span class="k">Day/night</span><span class="v">no</span>
           <span class="k">Reasoning tokens</span><span class="v">N/A*</span>
           <span class="k">Gen time</span><span class="v">~11 min</span>
           <span class="k">Human fixes</span><span class="v">1 (paren)</span>
@@ -152,90 +144,136 @@
     </tr></thead>
     <tbody>
       <tr><td>Output format</td><td>Multi-file</td><td>Single HTML</td><td>Single HTML</td></tr>
-      <tr><td>First-person + pointer lock</td><td class="yes">✅</td><td class="yes">✅</td><td class="yes">✅</td></tr>
-      <tr><td>Gravity + jump + collision</td><td class="yes">✅</td><td class="yes">✅</td><td class="yes">✅</td></tr>
-      <tr><td>Voxel raycast (break/place)</td><td class="yes">✅ Amanatides-Woo</td><td class="yes">✅ DDA</td><td class="yes">✅ Amanatides-Woo</td></tr>
-      <tr><td>Procedural textures</td><td class="no">❌</td><td class="yes">✅</td><td class="yes">✅</td></tr>
-      <tr><td>Day/night cycle</td><td class="no">❌</td><td class="yes">✅</td><td class="yes">✅</td></tr>
-      <tr><td>Chunk-based terrain</td><td class="no">❌</td><td class="no">❌</td><td class="yes">✅</td></tr>
-      <tr><td>Trees</td><td class="yes">✅</td><td class="yes">✅</td><td class="yes">✅</td></tr>
-      <tr><td>Water</td><td class="no">❌</td><td class="yes">✅</td><td class="yes">✅</td></tr>
-      <tr><td>Transparent blocks (glass)</td><td class="no">❌</td><td class="no">❌</td><td class="yes">✅</td></tr>
-      <tr><td>Booted without fixes</td><td class="no">❌</td><td class="yes">✅</td><td class="yes">✅</td></tr>
+      <tr><td>First-person + pointer lock</td><td class="yes">yes</td><td class="yes">yes</td><td class="yes">yes</td></tr>
+      <tr><td>Gravity + jump + collision</td><td class="yes">yes</td><td class="yes">yes</td><td class="yes">yes</td></tr>
+      <tr><td>Voxel raycast (break/place)</td><td class="yes">Amanatides-Woo</td><td class="yes">DDA</td><td class="yes">Amanatides-Woo</td></tr>
+      <tr><td>Procedural textures</td><td class="no">no</td><td class="yes">yes</td><td class="yes">yes</td></tr>
+      <tr><td>Day/night cycle</td><td class="no">no</td><td class="yes">yes</td><td class="yes">yes</td></tr>
+      <tr><td>Chunk-based terrain</td><td class="no">no</td><td class="no">no</td><td class="yes">yes</td></tr>
+      <tr><td>Trees</td><td class="yes">yes</td><td class="yes">yes</td><td class="yes">yes</td></tr>
+      <tr><td>Water</td><td class="no">no</td><td class="yes">yes</td><td class="yes">yes</td></tr>
+      <tr><td>Transparent blocks (glass)</td><td class="no">no</td><td class="no">no</td><td class="yes">yes</td></tr>
+      <tr><td>Booted without fixes</td><td class="no">no</td><td class="yes">yes</td><td class="yes">yes</td></tr>
     </tbody>
   </table>
-  <p style="color:var(--text-dim);font-size:12px;margin-top:8px">* OpenCode Go run used <code>--no-session</code>, thinking chain not preserved.</p>
+  <p style="color:var(--text-dim);font-size:12px;margin-top:8px">* OpenCode Go run used --no-session; thinking chain not preserved.</p>
 </div>
 
-<!-- ==================== APARTMENT ==================== -->
+<!-- APARTMENT -->
 <div class="section" id="apartment">
-  <h2>🏠 3D Apartment Reconstruction</h2>
-  <p class="subtitle">Text spec → Blender Python script → 3D scene. Kimi K2.7 baseline; GLM-5.2 runs in progress.</p>
+  <h2>3D Apartment Reconstruction</h2>
+  <p class="subtitle">Same text spec → Blender Python script → 3D scene + renders. Three models, three agent routes.</p>
 
   <div class="prompt-card">
     <div class="label">Task</div>
     <code>Reconstruct an apartment bedroom + corridor in Blender from a precise text specification
-(dimensions, furniture, materials, lighting, cameras, render outputs).</code>
+(dimensions, furniture, materials, lighting, cameras, render outputs).
+Run headless: blender --background --python apartment_reconstruction.py</code>
   </div>
 
   <div class="results">
-    <!-- Kimi -->
     <div class="card">
       <img class="thumb" src="assets/apartment/kimi/overview.png" alt="Kimi apartment">
       <div class="body">
-        <span class="badge green">✅ Complete</span>
+        <span class="badge green">Complete</span>
         <h3>Kimi K2.7 Code</h3>
         <div class="model">kimi-k2.7-code (via OMP)</div>
         <div class="stats">
-          <span class="k">Script size</span><span class="v">50KB</span>
-          <span class="k">Render outputs</span><span class="v">5 images</span>
-          <span class="k">Blender runs</span><span class="v">✅ headless</span>
-          <span class="k">GLB export</span><span class="v">✅</span>
-          <span class="k">Materials</span><span class="v">12 types</span>
-          <span class="k">Cameras</span><span class="v">5</span>
+          <span class="k">Script lines</span><span class="v">1240</span>
+          <span class="k">Blend size</span><span class="v">148KB</span>
+          <span class="k">Renders</span><span class="v">5 images</span>
+          <span class="k">Headless run</span><span class="v">yes</span>
+          <span class="k">GLB export</span><span class="v">yes</span>
+          <span class="k">Non-manifold</span><span class="v">0</span>
         </div>
       </div>
     </div>
 
-    <!-- GLM OMP placeholder -->
-    <div class="card" id="glm-omp-card">
-      <div class="thumb" style="display:flex;align-items:center;justify-content:center;color:var(--text-dim);font-size:14px;">⏳ Running…</div>
+    <div class="card">
+      <img class="thumb" src="assets/apartment/omp-glm-5-2/render_overview.png" alt="OMP GLM apartment">
       <div class="body">
-        <span class="badge yellow">🔄 In progress</span>
+        <span class="badge green">Complete</span>
         <h3>GLM-5.2 via OMP</h3>
-        <div class="model">glm-5.2 (zhipu-coding-plan)</div>
-        <div class="stats">
-          <span class="k">Status</span><span class="v">generating…</span>
-        </div>
-      </div>
-    </div>
-
-    <!-- GLM Claude placeholder -->
-    <div class="card" id="glm-claude-card">
-      <div class="thumb" style="display:flex;align-items:center;justify-content:center;color:var(--text-dim);font-size:14px;">⏳ Running…</div>
-      <div class="body">
-        <span class="badge yellow">🔄 In progress</span>
-        <h3>GLM-5.2 via Claude Code</h3>
         <div class="model">zhipu-coding-plan/glm-5.2</div>
         <div class="stats">
-          <span class="k">Status</span><span class="v">generating…</span>
+          <span class="k">Script lines</span><span class="v">934</span>
+          <span class="k">Blend size</span><span class="v">160KB</span>
+          <span class="k">Renders</span><span class="v">5 × 1280×720</span>
+          <span class="k">Headless run</span><span class="v">yes (288s CPU)</span>
+          <span class="k">Mesh objects</span><span class="v">144</span>
+          <span class="k">Non-manifold</span><span class="v">0</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="card">
+      <img class="thumb" src="assets/apartment/claude-glm-5-2/preview_axonometric.png" alt="Claude GLM apartment">
+      <div class="body">
+        <span class="badge green">Complete</span>
+        <h3>GLM-5.2 via Claude Code</h3>
+        <div class="model">glm-5.2 (BigModel Anthropic proxy)</div>
+        <div class="stats">
+          <span class="k">Script lines</span><span class="v">719</span>
+          <span class="k">Blend size</span><span class="v">144KB</span>
+          <span class="k">Renders</span><span class="v">5 × 960×540</span>
+          <span class="k">Headless run</span><span class="v">yes</span>
+          <span class="k">Mesh objects</span><span class="v">136</span>
+          <span class="k">Non-manifold</span><span class="v">0</span>
         </div>
       </div>
     </div>
   </div>
 
-  <!-- Kimi reference renders -->
-  <h3 style="margin-top:32px;margin-bottom:12px;font-size:18px;">Kimi K2.7 Reference Renders</h3>
-  <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:12px;">
-    <img src="assets/apartment/kimi/render_reference_01.png" style="width:100%;border-radius:var(--radius);border:1px solid var(--border);" alt="ref1">
-    <img src="assets/apartment/kimi/render_reference_02.png" style="width:100%;border-radius:var(--radius);border:1px solid var(--border);" alt="ref2">
-    <img src="assets/apartment/kimi/render_reference_03.png" style="width:100%;border-radius:var(--radius);border:1px solid var(--border);" alt="ref3">
-    <img src="assets/apartment/kimi/render_reference_04.png" style="width:100%;border-radius:var(--radius);border:1px solid var(--border);" alt="ref4">
+  <table class="cmp-table">
+    <thead><tr>
+      <th>Dimension</th><th>Kimi K2.7</th><th>OMP + GLM-5.2</th><th>Claude + GLM-5.2</th>
+    </tr></thead>
+    <tbody>
+      <tr><td>Agent harness</td><td>OMP</td><td>OMP</td><td>Claude Code</td></tr>
+      <tr><td>Model</td><td>kimi-k2.7-code</td><td>zhipu-coding-plan/glm-5.2</td><td>glm-5.2 (Anthropic-compat)</td></tr>
+      <tr><td>Script lines</td><td>1240</td><td>934</td><td>719</td></tr>
+      <tr><td>Blend size</td><td>148KB</td><td>160KB</td><td>144KB</td></tr>
+      <tr><td>Render resolution</td><td>~1MP</td><td>1280×720</td><td>960×540</td></tr>
+      <tr><td>Mesh objects</td><td>—</td><td>144</td><td>136</td></tr>
+      <tr><td>Non-manifold edges</td><td class="yes">0</td><td class="yes">0</td><td class="yes">0</td></tr>
+      <tr><td>Bedroom 5.5×3.2×2.7</td><td class="yes">yes</td><td class="yes">yes</td><td class="yes">yes</td></tr>
+      <tr><td>Hallway + doors</td><td class="yes">yes</td><td class="yes">yes</td><td class="yes">yes</td></tr>
+      <tr><td>Bunk bed + desks + bookcase</td><td class="yes">yes</td><td class="yes">yes</td><td class="yes">yes</td></tr>
+      <tr><td>Lights + cameras</td><td class="yes">yes</td><td class="yes">yes</td><td class="yes">yes</td></tr>
+      <tr><td>Headless blender pass</td><td class="yes">yes</td><td class="yes">yes</td><td class="yes">yes</td></tr>
+    </tbody>
+  </table>
+
+  <h3 style="margin-top:32px;margin-bottom:8px;font-size:18px;">OMP + GLM-5.2 Renders</h3>
+  <div class="gallery">
+    <img src="assets/apartment/omp-glm-5-2/render_overview.png" alt="omp overview">
+    <img src="assets/apartment/omp-glm-5-2/render_ref1_door_to_window.png" alt="omp ref1">
+    <img src="assets/apartment/omp-glm-5-2/render_ref2_window_to_door.png" alt="omp ref2">
+    <img src="assets/apartment/omp-glm-5-2/render_ref3_bed_desk.png" alt="omp ref3">
+    <img src="assets/apartment/omp-glm-5-2/render_ref4_bookcase.png" alt="omp ref4">
+  </div>
+
+  <h3 style="margin-top:32px;margin-bottom:8px;font-size:18px;">Claude Code + GLM-5.2 Renders</h3>
+  <div class="gallery">
+    <img src="assets/apartment/claude-glm-5-2/preview_axonometric.png" alt="claude overview">
+    <img src="assets/apartment/claude-glm-5-2/ref01_door_view.png" alt="claude ref1">
+    <img src="assets/apartment/claude-glm-5-2/ref02_window_view.png" alt="claude ref2">
+    <img src="assets/apartment/claude-glm-5-2/ref03_hallway.png" alt="claude ref3">
+    <img src="assets/apartment/claude-glm-5-2/ref04_bunkbed.png" alt="claude ref4">
+  </div>
+
+  <h3 style="margin-top:32px;margin-bottom:8px;font-size:18px;">Kimi K2.7 Baseline Renders</h3>
+  <div class="gallery">
+    <img src="assets/apartment/kimi/overview.png" alt="kimi overview">
+    <img src="assets/apartment/kimi/render_reference_01.png" alt="kimi ref1">
+    <img src="assets/apartment/kimi/render_reference_02.png" alt="kimi ref2">
+    <img src="assets/apartment/kimi/render_reference_03.png" alt="kimi ref3">
+    <img src="assets/apartment/kimi/render_reference_04.png" alt="kimi ref4">
   </div>
 </div>
 
 <footer>
-  <p>Model Arena · Powered by <a href="https://github.com/vimalinx">vimalinx</a> · Built with real AI model outputs</p>
+  <p>Model Arena · <a href="https://github.com/vimalinx/model-arena">github.com/vimalinx/model-arena</a> · Real AI model outputs from TestMake suites</p>
 </footer>
 
 </body>
