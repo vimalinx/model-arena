@@ -9,35 +9,23 @@
   *{margin:0;padding:0;box-sizing:border-box}
   body{background:var(--bg);color:var(--text);font-family:system-ui,-apple-system,sans-serif;line-height:1.6}
   a{color:inherit;text-decoration:none}
-
-  /* Nav */
   nav{position:sticky;top:0;z-index:100;background:rgba(13,17,23,.92);backdrop-filter:blur(12px);border-bottom:1px solid var(--border);padding:10px 24px;display:flex;align-items:center;gap:20px}
   nav .logo{font-size:17px;font-weight:800;color:var(--accent)}
-  nav a{color:var(--dim);font-size:14px;transition:.2s}
-  nav a:hover{color:var(--text)}
-
-  /* Hero */
+  nav a{color:var(--dim);font-size:14px;transition:.2s}nav a:hover{color:var(--text)}
   .hero{text-align:center;padding:50px 24px 30px}
   .hero h1{font-size:38px;font-weight:800;letter-spacing:-1px;margin-bottom:8px;background:linear-gradient(135deg,var(--accent),#a371f7);-webkit-background-clip:text;-webkit-text-fill-color:transparent}
   .hero p{color:var(--dim);font-size:16px}
-
-  /* Suite */
   .suite{max-width:1200px;margin:0 auto;padding:20px 24px 40px}
   .suite-head{display:flex;align-items:center;gap:12px;margin-bottom:4px}
   .suite-head h2{font-size:22px;font-weight:700}
   .suite-head .count{background:var(--surface);border:1px solid var(--border);padding:2px 10px;border-radius:999px;font-size:12px;color:var(--dim)}
-
-  /* Collapsible prompt */
   .prompt{margin:8px 0 20px;border:1px solid var(--border);border-radius:var(--r);overflow:hidden}
   .prompt summary{cursor:pointer;padding:10px 16px;font-size:13px;color:var(--dim);user-select:none;display:flex;align-items:center;gap:8px}
   .prompt summary:hover{color:var(--text)}
-  .prompt summary::marker{content:''}
   .prompt summary .arrow{transition:transform .2s;font-size:10px}
   .prompt[open] summary .arrow{transform:rotate(90deg)}
   .prompt-body{padding:0 16px 12px}
-  .prompt-body code{display:block;white-space:pre-wrap;font-family:'JetBrains Mono',monospace;font-size:12px;color:var(--text);background:var(--surface);padding:12px;border-radius:4px}
-
-  /* Cards */
+  .prompt-body code{display:block;white-space:pre-wrap;font-family:'JetBrains Mono',monospace;font-size:12px;background:var(--surface);padding:12px;border-radius:4px}
   .cards{display:grid;grid-template-columns:repeat(auto-fill,minmax(320px,1fr));gap:16px}
   .card{background:var(--surface);border:1px solid var(--border);border-radius:var(--r);overflow:hidden;display:flex;flex-direction:column;transition:transform .15s,border-color .15s}
   .card:hover{transform:translateY(-2px);border-color:var(--accent)}
@@ -54,229 +42,114 @@
   .card h3{font-size:15px;font-weight:600}
   .card .model{color:var(--accent);font-size:12px;font-family:monospace;margin-bottom:8px}
   .stats{display:grid;grid-template-columns:1fr 1fr;gap:2px 10px;font-size:12px;margin-bottom:10px}
-  .stats .k{color:var(--dim)}
-  .stats .v{text-align:right}
+  .stats .k{color:var(--dim)}.stats .v{text-align:right}
   .actions{display:flex;gap:6px;margin-top:auto}
   .btn{padding:7px 11px;border-radius:5px;font-size:12px;font-weight:600;border:1px solid var(--border);background:#21262d;transition:.15s}
   .btn:hover{border-color:var(--accent);color:#fff}
-  .btn.primary{background:var(--accent);border-color:var(--accent);color:#0d1117}
-  .btn.primary:hover{filter:brightness(1.1)}
-
-  /* Comparison table */
+  .btn.primary{background:var(--accent);border-color:var(--accent);color:#0d1117}.btn.primary:hover{filter:brightness(1.1)}
   .cmp-wrap{margin-top:16px;border:1px solid var(--border);border-radius:var(--r);overflow:hidden}
-  .cmp-wrap summary{cursor:pointer;padding:8px 14px;font-size:13px;color:var(--dim)}
-  .cmp-wrap summary:hover{color:var(--text)}
+  .cmp-wrap summary{cursor:pointer;padding:8px 14px;font-size:13px;color:var(--dim)}.cmp-wrap summary:hover{color:var(--text)}
   .cmp-table{width:100%;border-collapse:collapse;font-size:13px}
   .cmp-table th,.cmp-table td{padding:8px 12px;text-align:left;border-bottom:1px solid var(--border)}
   .cmp-table th{color:var(--dim);font-size:11px;text-transform:uppercase;letter-spacing:.5px}
-  .cmp-table td.yes{color:var(--green)}
-  .cmp-table td.no{color:var(--red)}
-  .cmp-table tr:hover{background:rgba(255,255,255,.02)}
-
+  .cmp-table td.yes{color:var(--green)}.cmp-table td.no{color:var(--red)}
   footer{text-align:center;padding:30px;color:var(--dim);font-size:13px;border-top:1px solid var(--border);margin-top:30px}
 </style>
 </head>
 <body>
+<nav><span class="logo">Model Arena</span><a href="#minecraft">Minecraft</a><a href="#apartment">Apartment</a><a href="https://github.com/vimalinx/model-arena">GitHub ↗</a></nav>
+<div class="hero"><h1>Model Arena</h1><p>Same prompt, multiple models, real outputs. Click any card to play / inspect.</p></div>
 
-<nav>
-  <span class="logo">Model Arena</span>
-  <a href="#minecraft">Minecraft</a>
-  <a href="#apartment">Apartment</a>
-  <a href="https://github.com/vimalinx/model-arena">GitHub ↗</a>
-</nav>
-
-<div class="hero">
-  <h1>Model Arena</h1>
-  <p>Same prompt, multiple models, real outputs. Click any card to play / inspect.</p>
-</div>
-
-<!-- ===== MINECRAFT ===== -->
+<!-- MINECRAFT -->
 <div class="suite" id="minecraft">
-  <div class="suite-head">
-    <h2>Minecraft Single-HTML</h2>
-    <span class="count">3 models</span>
-  </div>
-  <details class="prompt">
-    <summary><span class="arrow">▶</span> Prompt (click to expand)</summary>
-    <div class="prompt-body"><code>在这里用单 HTML 实现一个 Minecraft 游戏，要求尽可能实现正确的效果和各种功能。可以去网上搜集资料，尽可能做细致，写在新的 Minecraft 2.HTML 文件内</code></div>
-  </details>
+  <div class="suite-head"><h2>Minecraft Single-HTML</h2><span class="count">3 models</span></div>
+  <details class="prompt"><summary><span class="arrow">▶</span> Prompt (click to expand)</summary><div class="prompt-body"><code>在这里用单 HTML 实现一个 Minecraft 游戏，要求尽可能实现正确的效果和各种功能。可以去网上搜集资料，尽可能做细致，写在新的 Minecraft 2.HTML 文件内</code></div></details>
   <div class="cards">
     <div class="card">
-      <a class="thumb-wrap" href="demos/minecraft/official/" target="_blank">
-        <img class="thumb" src="assets/minecraft/official-key.png"><div class="overlay"><span>▶ Play</span></div>
-      </a>
-      <div class="card-body">
-        <span class="badge green">Runs first try</span>
-        <h3>DeepSeek V4 Pro</h3><div class="model">official API</div>
-        <div class="stats">
-          <span class="k">Lines</span><span class="v">1005</span><span class="k">Blocks</span><span class="v">9</span>
-          <span class="k">Day/night</span><span class="v">✓</span><span class="k">Fixes</span><span class="v">0</span>
-        </div>
-        <div class="actions"><a class="btn primary" href="demos/minecraft/official/" target="_blank">Play</a></div>
-      </div>
+      <a class="thumb-wrap" href="demos/minecraft/official/" target="_blank"><img class="thumb" src="assets/minecraft/official-key.png"><div class="overlay"><span>▶ Play</span></div></a>
+      <div class="card-body"><span class="badge green">Runs first try</span><h3>DeepSeek V4 Pro</h3><div class="model">official API</div>
+        <div class="stats"><span class="k">Lines</span><span class="v">1005</span><span class="k">Blocks</span><span class="v">9</span><span class="k">Day/night</span><span class="v">✓</span><span class="k">Fixes</span><span class="v">0</span></div>
+        <div class="actions"><a class="btn primary" href="demos/minecraft/official/" target="_blank">Play</a></div></div>
     </div>
     <div class="card">
-      <a class="thumb-wrap" href="demos/minecraft/altkey/" target="_blank">
-        <img class="thumb" src="assets/minecraft/altkey.png"><div class="overlay"><span>▶ Play</span></div>
-      </a>
-      <div class="card-body">
-        <span class="badge green">Runs first try</span>
-        <h3>DeepSeek V4 Pro</h3><div class="model">official alt key</div>
-        <div class="stats">
-          <span class="k">Lines</span><span class="v">907</span><span class="k">Blocks</span><span class="v">14</span>
-          <span class="k">Day/night</span><span class="v">✓</span><span class="k">Fixes</span><span class="v">0</span>
-        </div>
-        <div class="actions"><a class="btn primary" href="demos/minecraft/altkey/" target="_blank">Play</a></div>
-      </div>
+      <a class="thumb-wrap" href="demos/minecraft/altkey/" target="_blank"><img class="thumb" src="assets/minecraft/altkey.png"><div class="overlay"><span>▶ Play</span></div></a>
+      <div class="card-body"><span class="badge green">Runs first try</span><h3>DeepSeek V4 Pro</h3><div class="model">official alt key</div>
+        <div class="stats"><span class="k">Lines</span><span class="v">907</span><span class="k">Blocks</span><span class="v">14</span><span class="k">Day/night</span><span class="v">✓</span><span class="k">Fixes</span><span class="v">0</span></div>
+        <div class="actions"><a class="btn primary" href="demos/minecraft/altkey/" target="_blank">Play</a></div></div>
     </div>
     <div class="card">
-      <a class="thumb-wrap" href="demos/minecraft/opencodego/" target="_blank">
-        <img class="thumb" src="assets/minecraft/opencodego.png"><div class="overlay"><span>▶ Play</span></div>
-      </a>
-      <div class="card-body">
-        <span class="badge yellow">1 fix needed</span>
-        <h3>DeepSeek V4 Pro</h3><div class="model">OpenCode Go</div>
-        <div class="stats">
-          <span class="k">Lines</span><span class="v">~540</span><span class="k">Blocks</span><span class="v">5</span>
-          <span class="k">Day/night</span><span class="v">✗</span><span class="k">Fixes</span><span class="v">1</span>
-        </div>
-        <div class="actions"><a class="btn primary" href="demos/minecraft/opencodego/" target="_blank">Play</a></div>
-      </div>
+      <a class="thumb-wrap" href="demos/minecraft/opencodego/" target="_blank"><img class="thumb" src="assets/minecraft/opencodego.png"><div class="overlay"><span>▶ Play</span></div></a>
+      <div class="card-body"><span class="badge yellow">1 fix needed</span><h3>DeepSeek V4 Pro</h3><div class="model">OpenCode Go</div>
+        <div class="stats"><span class="k">Lines</span><span class="v">~540</span><span class="k">Blocks</span><span class="v">5</span><span class="k">Day/night</span><span class="v">✗</span><span class="k">Fixes</span><span class="v">1</span></div>
+        <div class="actions"><a class="btn primary" href="demos/minecraft/opencodego/" target="_blank">Play</a></div></div>
     </div>
   </div>
-  <details class="cmp-wrap">
-    <summary>Feature comparison table</summary>
-    <table class="cmp-table">
-      <thead><tr><th>Feature</th><th>OpenCode Go</th><th>Official</th><th>Alt Key</th></tr></thead>
-      <tbody>
-        <tr><td>First-person + pointer lock</td><td class="yes">✓</td><td class="yes">✓</td><td class="yes">✓</td></tr>
-        <tr><td>Gravity + collision</td><td class="yes">✓</td><td class="yes">✓</td><td class="yes">✓</td></tr>
-        <tr><td>Break / place blocks</td><td class="yes">✓</td><td class="yes">✓</td><td class="yes">✓</td></tr>
-        <tr><td>Procedural textures</td><td class="no">✗</td><td class="yes">✓</td><td class="yes">✓</td></tr>
-        <tr><td>Day/night cycle</td><td class="no">✗</td><td class="yes">✓</td><td class="yes">✓</td></tr>
-        <tr><td>Chunk terrain</td><td class="no">✗</td><td class="no">✗</td><td class="yes">✓</td></tr>
-        <tr><td>Water</td><td class="no">✗</td><td class="yes">✓</td><td class="yes">✓</td></tr>
-        <tr><td>Glass / transparency</td><td class="no">✗</td><td class="no">✗</td><td class="yes">✓</td></tr>
-        <tr><td>Booted without fixes</td><td class="no">✗</td><td class="yes">✓</td><td class="yes">✓</td></tr>
-      </tbody>
-    </table>
+  <details class="cmp-wrap"><summary>Feature comparison table</summary>
+    <table class="cmp-table"><thead><tr><th>Feature</th><th>OpenCode Go</th><th>Official</th><th>Alt Key</th></tr></thead><tbody>
+      <tr><td>First-person + pointer lock</td><td class="yes">✓</td><td class="yes">✓</td><td class="yes">✓</td></tr>
+      <tr><td>Gravity + collision</td><td class="yes">✓</td><td class="yes">✓</td><td class="yes">✓</td></tr>
+      <tr><td>Break / place blocks</td><td class="yes">✓</td><td class="yes">✓</td><td class="yes">✓</td></tr>
+      <tr><td>Procedural textures</td><td class="no">✗</td><td class="yes">✓</td><td class="yes">✓</td></tr>
+      <tr><td>Day/night cycle</td><td class="no">✗</td><td class="yes">✓</td><td class="yes">✓</td></tr>
+      <tr><td>Chunk terrain</td><td class="no">✗</td><td class="no">✗</td><td class="yes">✓</td></tr>
+      <tr><td>Water</td><td class="no">✗</td><td class="yes">✓</td><td class="yes">✓</td></tr>
+      <tr><td>Glass / transparency</td><td class="no">✗</td><td class="no">✗</td><td class="yes">✓</td></tr>
+      <tr><td>Booted without fixes</td><td class="no">✗</td><td class="yes">✓</td><td class="yes">✓</td></tr>
+    </tbody></table>
   </details>
 </div>
 
-<!-- ===== APARTMENT ===== -->
+<!-- APARTMENT -->
 <div class="suite" id="apartment">
-  <div class="suite-head">
-    <h2>3D Apartment Reconstruction</h2>
-    <span class="count">6 models</span>
-  </div>
-  <details class="prompt">
-    <summary><span class="arrow">▶</span> Prompt (click to expand)</summary>
-    <div class="prompt-body"><code>根据公寓卧室+走廊精确规格（尺寸、家具、材质、灯光、相机），用 Blender Python 脚本程序化重建完整三维场景。
-blender --background --python apartment_reconstruction.py</code></div>
-  </details>
-
+  <div class="suite-head"><h2>3D Apartment Reconstruction</h2><span class="count">6 models</span></div>
+  <details class="prompt"><summary><span class="arrow">▶</span> Prompt (click to expand)</summary><div class="prompt-body"><code>根据公寓卧室+走廊精确规格（尺寸、家具、材质、灯光、相机），用 Blender Python 脚本程序化重建完整三维场景。
+blender --background --python apartment_reconstruction.py</code></div></details>
   <div class="cards">
-    <!-- Completed -->
     <div class="card">
-      <a class="thumb-wrap" href="demos/apartment/kimi/" target="_blank">
-        <img class="thumb" src="assets/apartment/kimi/overview.png"><div class="overlay"><span>▶ 3D Viewer</span></div>
-      </a>
-      <div class="card-body">
-        <span class="badge green">Complete</span>
-        <h3>Kimi K2.7 Code</h3><div class="model">OMP</div>
-        <div class="stats">
-          <span class="k">Script</span><span class="v">1240 lines</span><span class="k">Blend</span><span class="v">148KB</span>
-          <span class="k">Mesh</span><span class="v">—</span><span class="k">Non-manifold</span><span class="v">0</span>
-        </div>
-        <div class="actions">
-          <a class="btn primary" href="demos/apartment/kimi/" target="_blank">3D</a>
-          <a class="btn" href="demos/apartment/kimi/renders/" target="_blank">Renders</a>
-        </div>
-      </div>
+      <a class="thumb-wrap" href="demos/apartment/kimi/" target="_blank"><img class="thumb" src="assets/apartment/kimi/overview.png"><div class="overlay"><span>▶ 3D Viewer</span></div></a>
+      <div class="card-body"><span class="badge green">Complete</span><h3>Kimi K2.7 Code</h3><div class="model">OMP</div>
+        <div class="stats"><span class="k">Script</span><span class="v">1240 lines</span><span class="k">Blend</span><span class="v">148KB</span><span class="k">Non-manifold</span><span class="v">0</span><span class="k">GLB</span><span class="v">✓</span></div>
+        <div class="actions"><a class="btn primary" href="demos/apartment/kimi/" target="_blank">3D</a><a class="btn" href="demos/apartment/kimi/renders/" target="_blank">Renders</a></div></div>
     </div>
-
     <div class="card">
-      <a class="thumb-wrap" href="demos/apartment/omp-glm-5-2/" target="_blank">
-        <img class="thumb" src="assets/apartment/omp-glm-5-2/render_overview.png"><div class="overlay"><span>▶ 3D Viewer</span></div>
-      </a>
-      <div class="card-body">
-        <span class="badge green">Complete</span>
-        <h3>GLM-5.2</h3><div class="model">OMP · zhipu-coding-plan</div>
-        <div class="stats">
-          <span class="k">Script</span><span class="v">934 lines</span><span class="k">Blend</span><span class="v">160KB</span>
-          <span class="k">Mesh</span><span class="v">144</span><span class="k">Non-manifold</span><span class="v">0</span>
-        </div>
-        <div class="actions">
-          <a class="btn primary" href="demos/apartment/omp-glm-5-2/" target="_blank">3D</a>
-          <a class="btn" href="demos/apartment/omp-glm-5-2/renders/" target="_blank">Renders</a>
-        </div>
-      </div>
+      <a class="thumb-wrap" href="demos/apartment/omp-glm-5-2/" target="_blank"><img class="thumb" src="assets/apartment/omp-glm-5-2/render_overview.png"><div class="overlay"><span>▶ 3D Viewer</span></div></a>
+      <div class="card-body"><span class="badge green">Complete</span><h3>GLM-5.2</h3><div class="model">OMP · zhipu-coding-plan</div>
+        <div class="stats"><span class="k">Script</span><span class="v">934 lines</span><span class="k">Blend</span><span class="v">160KB</span><span class="k">Mesh</span><span class="v">144</span><span class="k">Non-manifold</span><span class="v">0</span></div>
+        <div class="actions"><a class="btn primary" href="demos/apartment/omp-glm-5-2/" target="_blank">3D</a><a class="btn" href="demos/apartment/omp-glm-5-2/renders/" target="_blank">Renders</a></div></div>
     </div>
-
     <div class="card">
-      <a class="thumb-wrap" href="demos/apartment/claude-glm-5-2/" target="_blank">
-        <img class="thumb" src="assets/apartment/claude-glm-5-2/preview_axonometric.png"><div class="overlay"><span>▶ 3D Viewer</span></div>
-      </a>
-      <div class="card-body">
-        <span class="badge green">Complete</span>
-        <h3>GLM-5.2</h3><div class="model">Claude Code · BigModel proxy</div>
-        <div class="stats">
-          <span class="k">Script</span><span class="v">719 lines</span><span class="k">Blend</span><span class="v">144KB</span>
-          <span class="k">Mesh</span><span class="v">136</span><span class="k">Non-manifold</span><span class="v">0</span>
-        </div>
-        <div class="actions">
-          <a class="btn primary" href="demos/apartment/claude-glm-5-2/" target="_blank">3D</a>
-          <a class="btn" href="demos/apartment/claude-glm-5-2/renders/" target="_blank">Renders</a>
-        </div>
-      </div>
+      <a class="thumb-wrap" href="demos/apartment/claude-glm-5-2/" target="_blank"><img class="thumb" src="assets/apartment/claude-glm-5-2/preview_axonometric.png"><div class="overlay"><span>▶ 3D Viewer</span></div></a>
+      <div class="card-body"><span class="badge green">Complete</span><h3>GLM-5.2</h3><div class="model">Claude Code · BigModel proxy</div>
+        <div class="stats"><span class="k">Script</span><span class="v">719 lines</span><span class="k">Blend</span><span class="v">144KB</span><span class="k">Mesh</span><span class="v">136</span><span class="k">Non-manifold</span><span class="v">0</span></div>
+        <div class="actions"><a class="btn primary" href="demos/apartment/claude-glm-5-2/" target="_blank">3D</a><a class="btn" href="demos/apartment/claude-glm-5-2/renders/" target="_blank">Renders</a></div></div>
     </div>
-
-    <!-- In progress -->
-    <div class="card" style="opacity:.7">
-      <div class="thumb-wrap"><div class="thumb" style="display:flex;align-items:center;justify-content:center;color:var(--dim)">⏳ Running…</div></div>
-      <div class="card-body">
-        <span class="badge blue">In progress</span>
-        <h3>Grok 4.5</h3><div class="model">OMP · 52token</div>
-        <div class="stats"><span class="k">Status</span><span class="v">generating…</span></div>
-      </div>
+    <div class="card">
+      <a class="thumb-wrap" href="demos/apartment/kimi-k3/" target="_blank"><img class="thumb" src="assets/apartment/kimi-k3/overview.png"><div class="overlay"><span>▶ 3D Viewer</span></div></a>
+      <div class="card-body"><span class="badge green">Complete</span><h3>Kimi K3</h3><div class="model">Kimi CLI · kimi-for-coding</div>
+        <div class="stats"><span class="k">Script</span><span class="v">611 lines</span><span class="k">Blend</span><span class="v">148KB</span><span class="k">Renders</span><span class="v">5</span><span class="k">GLB</span><span class="v">✓</span></div>
+        <div class="actions"><a class="btn primary" href="demos/apartment/kimi-k3/" target="_blank">3D</a><a class="btn" href="demos/apartment/kimi-k3/renders/" target="_blank">Renders</a></div></div>
     </div>
-
-    <div class="card" style="opacity:.7">
-      <div class="thumb-wrap"><div class="thumb" style="display:flex;align-items:center;justify-content:center;color:var(--dim)">⏳ Running…</div></div>
-      <div class="card-body">
-        <span class="badge blue">In progress</span>
-        <h3>Grok 4.5</h3><div class="model">Claude Code · 52token</div>
-        <div class="stats"><span class="k">Status</span><span class="v">generating…</span></div>
-      </div>
+    <div class="card" style="opacity:.5">
+      <div class="thumb-wrap"><div class="thumb" style="display:flex;align-items:center;justify-content:center;color:var(--dim);font-size:13px;padding:20px;text-align:center">52token route returned<br>0-token responses</div></div>
+      <div class="card-body"><span class="badge yellow">Failed</span><h3>Grok 4.5</h3><div class="model">OMP · 52token</div>
+        <div class="stats"><span class="k">Status</span><span class="v">empty responses</span></div></div>
     </div>
-
-    <div class="card" style="opacity:.7">
-      <div class="thumb-wrap"><div class="thumb" style="display:flex;align-items:center;justify-content:center;color:var(--dim)">⏳ Running…</div></div>
-      <div class="card-body">
-        <span class="badge blue">In progress</span>
-        <h3>Kimi K3</h3><div class="model">Kimi CLI · kimi-for-coding</div>
-        <div class="stats"><span class="k">Status</span><span class="v">generating…</span></div>
-      </div>
+    <div class="card" style="opacity:.5">
+      <div class="thumb-wrap"><div class="thumb" style="display:flex;align-items:center;justify-content:center;color:var(--dim);font-size:13px;padding:20px;text-align:center">52token is OpenAI-compat,<br>not Anthropic-compat</div></div>
+      <div class="card-body"><span class="badge yellow">Skipped</span><h3>Grok 4.5</h3><div class="model">Claude Code · 52token</div>
+        <div class="stats"><span class="k">Status</span><span class="v">no compat proxy</span></div></div>
     </div>
   </div>
-
-  <details class="cmp-wrap">
-    <summary>Feature comparison table</summary>
-    <table class="cmp-table">
-      <thead><tr><th>Dimension</th><th>Kimi K2.7</th><th>OMP GLM-5.2</th><th>Claude GLM-5.2</th><th>Grok OMP</th><th>Grok CC</th><th>Kimi K3</th></tr></thead>
-      <tbody>
-        <tr><td>Script lines</td><td>1240</td><td>934</td><td>719</td><td>—</td><td>—</td><td>—</td></tr>
-        <tr><td>Headless blender pass</td><td class="yes">✓</td><td class="yes">✓</td><td class="yes">✓</td><td>—</td><td>—</td><td>—</td></tr>
-        <tr><td>Non-manifold edges</td><td class="yes">0</td><td class="yes">0</td><td class="yes">0</td><td>—</td><td>—</td><td>—</td></tr>
-        <tr><td>GLB export</td><td class="yes">✓</td><td class="yes">✓</td><td class="yes">✓</td><td>—</td><td>—</td><td>—</td></tr>
-      </tbody>
-    </table>
+  <details class="cmp-wrap"><summary>Feature comparison table</summary>
+    <table class="cmp-table"><thead><tr><th>Dimension</th><th>Kimi K2.7</th><th>OMP GLM-5.2</th><th>Claude GLM-5.2</th><th>Kimi K3</th><th>Grok 4.5</th></tr></thead><tbody>
+      <tr><td>Script lines</td><td>1240</td><td>934</td><td>719</td><td>611</td><td>—</td></tr>
+      <tr><td>Blend size</td><td>148KB</td><td>160KB</td><td>144KB</td><td>148KB</td><td>—</td></tr>
+      <tr><td>Headless blender pass</td><td class="yes">✓</td><td class="yes">✓</td><td class="yes">✓</td><td class="yes">✓</td><td class="no">✗</td></tr>
+      <tr><td>Non-manifold edges</td><td class="yes">0</td><td class="yes">0</td><td class="yes">0</td><td class="yes">0</td><td>—</td></tr>
+      <tr><td>GLB export</td><td class="yes">✓</td><td class="yes">✓</td><td class="yes">✓</td><td class="yes">✓</td><td>—</td></tr>
+    </tbody></table>
   </details>
 </div>
 
-<footer>
-  <a href="https://github.com/vimalinx/model-arena">github.com/vimalinx/model-arena</a> · Click cards to open real demos
-</footer>
-
-</body>
-</html>
+<footer><a href="https://github.com/vimalinx/model-arena">github.com/vimalinx/model-arena</a> · Click cards to open real demos</footer>
+</body></html>

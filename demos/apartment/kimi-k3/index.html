@@ -1,0 +1,18 @@
+<!DOCTYPE html>
+<html><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Apartment — Kimi K3</title>
+<style>*{margin:0;padding:0;box-sizing:border-box}body{overflow:hidden;background:#111;color:#fff;font-family:system-ui}#c{width:100vw;height:100vh}#ui{position:absolute;top:12px;left:12px;z-index:10;background:rgba(0,0,0,.72);padding:14px 16px;border-radius:10px;max-width:300px}#ui h1{font-size:15px;margin-bottom:6px}#ui p{font-size:12px;color:#bbb}#ui a{color:#58a6ff}#ld{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;background:#111;z-index:5}</style>
+</head><body><div id="ld">Loading 3D…</div>
+<div id="ui"><h1>Apartment — Kimi K3</h1><p>Drag · Scroll · Right-drag<br><a href="renders/">Renders</a> · <a href="../../../">Arena</a></p></div>
+<canvas id="c"></canvas>
+<script type="importmap">{"imports":{"three":"https://unpkg.com/three@0.160.0/build/three.module.js","three/addons/":"https://unpkg.com/three@0.160.0/examples/jsm/"}}</script>
+<script type="module">
+import*as THREE from'three';import{OrbitControls}from'three/addons/controls/OrbitControls.js';import{GLTFLoader}from'three/addons/loaders/GLTFLoader.js';
+const r=new THREE.WebGLRenderer({canvas:document.getElementById('c'),antialias:true});r.setPixelRatio(Math.min(devicePixelRatio,2));r.setSize(innerWidth,innerHeight);r.toneMapping=THREE.ACESFilmicToneMapping;r.toneMappingExposure=1.1;
+const s=new THREE.Scene();s.background=new THREE.Color(0x1a1a1a);
+const cam=new THREE.PerspectiveCamera(50,innerWidth/innerHeight,.05,200);cam.position.set(6,4,8);
+const ctl=new OrbitControls(cam,r.domElement);ctl.enableDamping=true;ctl.target.set(1.6,1.2,1);
+s.add(new THREE.AmbientLight(0xffffff,.55));const sun=new THREE.DirectionalLight(0xfff2e0,1.2);sun.position.set(5,10,3);s.add(sun);
+new GLTFLoader().load('apartment_reconstruction.glb',g=>{s.add(g.scene);const b=new THREE.Box3().setFromObject(g.scene);const sz=b.getSize(new THREE.Vector3());const ct=b.getCenter(new THREE.Vector3());ctl.target.copy(ct);const m=Math.max(sz.x,sz.y,sz.z);cam.position.copy(ct).add(new THREE.Vector3(m*.9,m*.55,m*.9));cam.near=m/100;cam.far=m*20;cam.updateProjectionMatrix();document.getElementById('ld').style.display='none'},undefined,e=>{document.getElementById('ld').textContent='Load failed: '+e.message});
+addEventListener('resize',()=>{cam.aspect=innerWidth/innerHeight;cam.updateProjectionMatrix();r.setSize(innerWidth,innerHeight)});
+(function t(){requestAnimationFrame(t);ctl.update();r.render(s,cam)})()
+</script></body></html>

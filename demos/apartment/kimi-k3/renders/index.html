@@ -1,0 +1,6 @@
+<!DOCTYPE html><html><head><meta charset="UTF-8"><title>Renders — Kimi K3</title>
+<style>body{margin:0;background:#0d1117;color:#c9d1d9;font-family:system-ui;padding:24px}h1{font-size:20px}a{color:#58a6ff}.g{display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:14px;margin-top:20px}figure{margin:0;background:#161b22;border:1px solid #30363d;border-radius:8px;overflow:hidden}img{width:100%}figcaption{padding:8px 12px;font-size:12px;color:#8b949e}</style>
+</head><body><h1>Renders — Kimi K3</h1><p><a href="../">3D Viewer</a> · <a href="../../../">Arena</a></p>
+<div class="g" id="g"></div>
+<script>['render_door.png','render_window.png','render_bed_desk.png','render_corridor.png','render_preview.png'].forEach(n=>{fetch(n,{method:'HEAD'}).then(r=>{if(!r.ok)return;const f=document.createElement('figure');f.innerHTML='<a href="'+n+'" target="_blank"><img src="'+n+'"></a><figcaption>'+n+'</figcaption>';document.getElementById('g').appendChild(f)})})</script>
+</body></html>
