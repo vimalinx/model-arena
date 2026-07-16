@@ -1,0 +1,41 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Renders — omp-glm-5-2</title>
+<style>
+  body{margin:0;background:#0d1117;color:#c9d1d9;font-family:system-ui,sans-serif;padding:24px}
+  h1{font-size:20px;margin-bottom:8px}
+  a{color:#58a6ff}
+  .grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:14px;margin-top:20px}
+  figure{margin:0;background:#161b22;border:1px solid #30363d;border-radius:8px;overflow:hidden}
+  img{width:100%;display:block}
+  figcaption{padding:8px 12px;font-size:12px;color:#8b949e}
+</style>
+</head>
+<body>
+  <h1>Renders — omp-glm-5-2</h1>
+  <p><a href="../">打开 3D 查看器</a> · <a href="../../../">返回 Arena</a></p>
+  <div class="grid" id="g"></div>
+  <script>
+    // list known files from this folder by probing common names
+    const candidates = [
+      'overview.png','render_overview.png','preview_axonometric.png',
+      'render_reference_01.png','render_reference_02.png','render_reference_03.png','render_reference_04.png',
+      'render_ref1_door_to_window.png','render_ref2_window_to_door.png','render_ref3_bed_desk.png','render_ref4_bookcase.png',
+      'ref01_door_view.png','ref02_window_view.png','ref03_hallway.png','ref04_bunkbed.png'
+    ];
+    const g = document.getElementById('g');
+    candidates.forEach(async (name) => {
+      try {
+        const r = await fetch(name, {method:'HEAD'});
+        if (!r.ok) return;
+        const fig = document.createElement('figure');
+        fig.innerHTML = '<a href="'+name+'" target="_blank"><img src="'+name+'" alt="'+name+'"></a><figcaption>'+name+'</figcaption>';
+        g.appendChild(fig);
+      } catch {}
+    });
+  </script>
+</body>
+</html>

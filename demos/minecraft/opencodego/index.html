@@ -1,0 +1,85 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Voxel Mini-Game</title>
+<style>
+* { margin: 0; padding: 0; box-sizing: border-box; }
+html, body { width: 100%; height: 100%; overflow: hidden; background: #000; font-family: monospace; }
+canvas { display: block; }
+
+#blocker {
+  position: fixed; inset: 0;
+  background: rgba(0,0,0,0.5);
+  display: flex; align-items: center; justify-content: center;
+  color: #fff; font-size: 24px; cursor: pointer; z-index: 10;
+}
+#blocker p {
+  text-align: center; line-height: 1.8;
+}
+#blocker span {
+  font-size: 14px; color: #aaa;
+}
+
+#hud {
+  position: fixed; inset: 0; pointer-events: none; z-index: 5;
+}
+
+#crosshair {
+  position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%);
+  width: 24px; height: 24px;
+}
+#crosshair::before, #crosshair::after {
+  content: ''; position: absolute; background: rgba(255,255,255,0.8);
+}
+#crosshair::before { width: 2px; height: 100%; left: 50%; transform: translateX(-50%); }
+#crosshair::after { height: 2px; width: 100%; top: 50%; transform: translateY(-50%); }
+
+#hotbar {
+  position: absolute; bottom: 20px; left: 50%; transform: translateX(-50%);
+  display: flex; gap: 4px; background: rgba(0,0,0,0.5); padding: 6px 8px;
+  border-radius: 4px;
+}
+.hotbar-slot {
+  width: 48px; height: 48px; border: 2px solid rgba(255,255,255,0.3);
+  border-radius: 4px; position: relative;
+}
+.hotbar-slot.selected {
+  border-color: #fff; box-shadow: 0 0 8px rgba(255,255,255,0.5);
+}
+.hotbar-slot .color {
+  position: absolute; inset: 4px; border-radius: 2px;
+}
+.hotbar-slot .label {
+  position: absolute; bottom: 2px; left: 0; right: 0;
+  text-align: center; font-size: 9px; color: #fff;
+  text-shadow: 0 0 4px #000;
+}
+
+#help {
+  position: absolute; top: 10px; left: 10px;
+  color: rgba(255,255,255,0.6); font-size: 12px; line-height: 1.6;
+}
+</style>
+</head>
+<body>
+
+<div id="blocker"><p>Click to play<br><span>WASD move | Space jump | Left-click break | Right-click place | 1-5 select block</span></p></div>
+
+<div id="hud" style="display:none">
+  <div id="crosshair"></div>
+  <div id="hotbar"></div>
+  <div id="help">WASD move &middot; Space jump &middot; Click break/place &middot; 1-5 select &middot; Esc release</div>
+</div>
+
+<script type="importmap">
+{
+  "imports": {
+    "three": "https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js"
+  }
+}
+</script>
+<script type="module" src="game.js"></script>
+</body>
+</html>

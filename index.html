@@ -33,27 +33,40 @@
   .prompt-card code { display:block; white-space:pre-wrap; font-family:'JetBrains Mono','Fira Code',monospace; font-size:13px; }
 
   .results { display:grid; grid-template-columns:repeat(auto-fit,minmax(340px,1fr)); gap:20px; }
-  .card { background:var(--surface); border:1px solid var(--border); border-radius:var(--radius); overflow:hidden; transition:transform 0.2s,border-color 0.2s; }
+  .card { background:var(--surface); border:1px solid var(--border); border-radius:var(--radius); overflow:hidden; transition:transform 0.2s,border-color 0.2s; display:flex; flex-direction:column; }
   .card:hover { transform:translateY(-2px); border-color:var(--accent); }
+  .card .thumb-wrap { position:relative; display:block; }
   .card .thumb { width:100%; aspect-ratio:16/9; object-fit:cover; border-bottom:1px solid var(--border); background:#000; display:block; }
-  .card .body { padding:16px 20px; }
-  .card .badge { display:inline-block; font-size:11px; padding:2px 8px; border-radius:12px; font-weight:600; margin-bottom:8px; }
+  .card .play-overlay {
+    position:absolute; inset:0; display:flex; align-items:center; justify-content:center;
+    background:rgba(0,0,0,.35); opacity:0; transition:opacity .2s; color:#fff; font-weight:700; font-size:15px; letter-spacing:.3px;
+  }
+  .card:hover .play-overlay { opacity:1; }
+  .card .play-overlay span { background:rgba(88,166,255,.95); padding:10px 16px; border-radius:999px; }
+  .card .body { padding:16px 20px; flex:1; display:flex; flex-direction:column; }
+  .card .badge { display:inline-block; font-size:11px; padding:2px 8px; border-radius:12px; font-weight:600; margin-bottom:8px; width:fit-content; }
   .badge.green { background:rgba(63,185,80,0.15); color:var(--green); }
   .badge.yellow { background:rgba(210,153,34,0.15); color:var(--yellow); }
   .card h3 { font-size:16px; font-weight:600; margin-bottom:4px; }
   .card .model { color:var(--accent); font-size:13px; font-family:monospace; margin-bottom:12px; }
-  .card .stats { display:grid; grid-template-columns:1fr 1fr; gap:4px 12px; font-size:13px; }
+  .card .stats { display:grid; grid-template-columns:1fr 1fr; gap:4px 12px; font-size:13px; margin-bottom:14px; }
   .card .stats .k { color:var(--text-dim); }
   .card .stats .v { text-align:right; }
+  .actions { display:flex; gap:8px; margin-top:auto; }
+  .btn {
+    display:inline-flex; align-items:center; justify-content:center; gap:6px;
+    padding:8px 12px; border-radius:6px; font-size:13px; font-weight:600; text-decoration:none;
+    border:1px solid var(--border); color:var(--text); background:#21262d; transition:background .15s,border-color .15s;
+  }
+  .btn:hover { border-color:var(--accent); color:#fff; }
+  .btn.primary { background:var(--accent); border-color:var(--accent); color:#0d1117; }
+  .btn.primary:hover { filter:brightness(1.08); }
 
   .cmp-table { width:100%; border-collapse:collapse; font-size:14px; margin-top:16px; }
   .cmp-table th, .cmp-table td { padding:10px 14px; text-align:left; border-bottom:1px solid var(--border); }
   .cmp-table th { color:var(--text-dim); font-weight:600; font-size:12px; text-transform:uppercase; letter-spacing:0.5px; }
   .cmp-table td.yes { color:var(--green); } .cmp-table td.no { color:var(--red); }
   .cmp-table tr:hover { background:rgba(255,255,255,0.03); }
-
-  .gallery { display:grid; grid-template-columns:repeat(auto-fit,minmax(240px,1fr)); gap:12px; margin-top:16px; }
-  .gallery img { width:100%; border-radius:var(--radius); border:1px solid var(--border); }
 
   footer { text-align:center; padding:40px; color:var(--text-dim); font-size:13px; border-top:1px solid var(--border); margin-top:40px; }
   footer a { color:var(--accent); text-decoration:none; }
@@ -72,13 +85,14 @@
 
 <div class="hero">
   <h1>Model Arena</h1>
-  <p>Same prompt. Multiple AI models. Side-by-side comparison.<br>Real outputs, real browser testing, real evidence.</p>
+  <p>Same prompt. Multiple AI models. Side-by-side comparison.<br>
+  Click any card to open the real playable / 3D demo.</p>
 </div>
 
 <!-- MINECRAFT -->
 <div class="section" id="minecraft">
   <h2>Minecraft Single-HTML</h2>
-  <p class="subtitle">One Chinese prompt → three DeepSeek V4 Pro runs via different channels</p>
+  <p class="subtitle">One Chinese prompt → three DeepSeek V4 Pro runs. Click Open Game to play in browser.</p>
 
   <div class="prompt-card">
     <div class="label">Prompt (identical for all models)</div>
@@ -87,7 +101,10 @@
 
   <div class="results">
     <div class="card">
-      <img class="thumb" src="assets/minecraft/official-key.png" alt="Official DeepSeek">
+      <a class="thumb-wrap" href="demos/minecraft/official/" target="_blank" rel="noopener">
+        <img class="thumb" src="assets/minecraft/official-key.png" alt="Official DeepSeek">
+        <div class="play-overlay"><span>▶ Open Game</span></div>
+      </a>
       <div class="body">
         <span class="badge green">Runs first try</span>
         <h3>DeepSeek V4 Pro</h3>
@@ -100,11 +117,17 @@
           <span class="k">Gen time</span><span class="v">~5 min</span>
           <span class="k">Human fixes</span><span class="v">0</span>
         </div>
+        <div class="actions">
+          <a class="btn primary" href="demos/minecraft/official/" target="_blank" rel="noopener">Open Game</a>
+        </div>
       </div>
     </div>
 
     <div class="card">
-      <img class="thumb" src="assets/minecraft/altkey.png" alt="Alt key DeepSeek">
+      <a class="thumb-wrap" href="demos/minecraft/altkey/" target="_blank" rel="noopener">
+        <img class="thumb" src="assets/minecraft/altkey.png" alt="Alt key DeepSeek">
+        <div class="play-overlay"><span>▶ Open Game</span></div>
+      </a>
       <div class="body">
         <span class="badge green">Runs first try</span>
         <h3>DeepSeek V4 Pro</h3>
@@ -117,11 +140,17 @@
           <span class="k">Gen time</span><span class="v">~6.5 min</span>
           <span class="k">Human fixes</span><span class="v">0</span>
         </div>
+        <div class="actions">
+          <a class="btn primary" href="demos/minecraft/altkey/" target="_blank" rel="noopener">Open Game</a>
+        </div>
       </div>
     </div>
 
     <div class="card">
-      <img class="thumb" src="assets/minecraft/opencodego.png" alt="OpenCode Go DeepSeek">
+      <a class="thumb-wrap" href="demos/minecraft/opencodego/" target="_blank" rel="noopener">
+        <img class="thumb" src="assets/minecraft/opencodego.png" alt="OpenCode Go DeepSeek">
+        <div class="play-overlay"><span>▶ Open Game</span></div>
+      </a>
       <div class="body">
         <span class="badge yellow">1 syntax fix needed</span>
         <h3>DeepSeek V4 Pro</h3>
@@ -133,6 +162,9 @@
           <span class="k">Reasoning tokens</span><span class="v">N/A*</span>
           <span class="k">Gen time</span><span class="v">~11 min</span>
           <span class="k">Human fixes</span><span class="v">1 (paren)</span>
+        </div>
+        <div class="actions">
+          <a class="btn primary" href="demos/minecraft/opencodego/" target="_blank" rel="noopener">Open Game</a>
         </div>
       </div>
     </div>
@@ -156,13 +188,13 @@
       <tr><td>Booted without fixes</td><td class="no">no</td><td class="yes">yes</td><td class="yes">yes</td></tr>
     </tbody>
   </table>
-  <p style="color:var(--text-dim);font-size:12px;margin-top:8px">* OpenCode Go run used --no-session; thinking chain not preserved.</p>
+  <p style="color:var(--text-dim);font-size:12px;margin-top:8px">* OpenCode Go run used --no-session; thinking chain not preserved. Games need click-to-lock mouse.</p>
 </div>
 
 <!-- APARTMENT -->
 <div class="section" id="apartment">
   <h2>3D Apartment Reconstruction</h2>
-  <p class="subtitle">Same text spec → Blender Python script → 3D scene + renders. Three models, three agent routes.</p>
+  <p class="subtitle">Same text spec → Blender Python → 3D scene. Click Open 3D Viewer to inspect the GLB.</p>
 
   <div class="prompt-card">
     <div class="label">Task</div>
@@ -173,7 +205,10 @@ Run headless: blender --background --python apartment_reconstruction.py</code>
 
   <div class="results">
     <div class="card">
-      <img class="thumb" src="assets/apartment/kimi/overview.png" alt="Kimi apartment">
+      <a class="thumb-wrap" href="demos/apartment/kimi/" target="_blank" rel="noopener">
+        <img class="thumb" src="assets/apartment/kimi/overview.png" alt="Kimi apartment">
+        <div class="play-overlay"><span>▶ Open 3D</span></div>
+      </a>
       <div class="body">
         <span class="badge green">Complete</span>
         <h3>Kimi K2.7 Code</h3>
@@ -186,11 +221,18 @@ Run headless: blender --background --python apartment_reconstruction.py</code>
           <span class="k">GLB export</span><span class="v">yes</span>
           <span class="k">Non-manifold</span><span class="v">0</span>
         </div>
+        <div class="actions">
+          <a class="btn primary" href="demos/apartment/kimi/" target="_blank" rel="noopener">Open 3D</a>
+          <a class="btn" href="demos/apartment/kimi/renders/" target="_blank" rel="noopener">Renders</a>
+        </div>
       </div>
     </div>
 
     <div class="card">
-      <img class="thumb" src="assets/apartment/omp-glm-5-2/render_overview.png" alt="OMP GLM apartment">
+      <a class="thumb-wrap" href="demos/apartment/omp-glm-5-2/" target="_blank" rel="noopener">
+        <img class="thumb" src="assets/apartment/omp-glm-5-2/render_overview.png" alt="OMP GLM apartment">
+        <div class="play-overlay"><span>▶ Open 3D</span></div>
+      </a>
       <div class="body">
         <span class="badge green">Complete</span>
         <h3>GLM-5.2 via OMP</h3>
@@ -203,11 +245,18 @@ Run headless: blender --background --python apartment_reconstruction.py</code>
           <span class="k">Mesh objects</span><span class="v">144</span>
           <span class="k">Non-manifold</span><span class="v">0</span>
         </div>
+        <div class="actions">
+          <a class="btn primary" href="demos/apartment/omp-glm-5-2/" target="_blank" rel="noopener">Open 3D</a>
+          <a class="btn" href="demos/apartment/omp-glm-5-2/renders/" target="_blank" rel="noopener">Renders</a>
+        </div>
       </div>
     </div>
 
     <div class="card">
-      <img class="thumb" src="assets/apartment/claude-glm-5-2/preview_axonometric.png" alt="Claude GLM apartment">
+      <a class="thumb-wrap" href="demos/apartment/claude-glm-5-2/" target="_blank" rel="noopener">
+        <img class="thumb" src="assets/apartment/claude-glm-5-2/preview_axonometric.png" alt="Claude GLM apartment">
+        <div class="play-overlay"><span>▶ Open 3D</span></div>
+      </a>
       <div class="body">
         <span class="badge green">Complete</span>
         <h3>GLM-5.2 via Claude Code</h3>
@@ -219,6 +268,10 @@ Run headless: blender --background --python apartment_reconstruction.py</code>
           <span class="k">Headless run</span><span class="v">yes</span>
           <span class="k">Mesh objects</span><span class="v">136</span>
           <span class="k">Non-manifold</span><span class="v">0</span>
+        </div>
+        <div class="actions">
+          <a class="btn primary" href="demos/apartment/claude-glm-5-2/" target="_blank" rel="noopener">Open 3D</a>
+          <a class="btn" href="demos/apartment/claude-glm-5-2/renders/" target="_blank" rel="noopener">Renders</a>
         </div>
       </div>
     </div>
@@ -243,37 +296,10 @@ Run headless: blender --background --python apartment_reconstruction.py</code>
       <tr><td>Headless blender pass</td><td class="yes">yes</td><td class="yes">yes</td><td class="yes">yes</td></tr>
     </tbody>
   </table>
-
-  <h3 style="margin-top:32px;margin-bottom:8px;font-size:18px;">OMP + GLM-5.2 Renders</h3>
-  <div class="gallery">
-    <img src="assets/apartment/omp-glm-5-2/render_overview.png" alt="omp overview">
-    <img src="assets/apartment/omp-glm-5-2/render_ref1_door_to_window.png" alt="omp ref1">
-    <img src="assets/apartment/omp-glm-5-2/render_ref2_window_to_door.png" alt="omp ref2">
-    <img src="assets/apartment/omp-glm-5-2/render_ref3_bed_desk.png" alt="omp ref3">
-    <img src="assets/apartment/omp-glm-5-2/render_ref4_bookcase.png" alt="omp ref4">
-  </div>
-
-  <h3 style="margin-top:32px;margin-bottom:8px;font-size:18px;">Claude Code + GLM-5.2 Renders</h3>
-  <div class="gallery">
-    <img src="assets/apartment/claude-glm-5-2/preview_axonometric.png" alt="claude overview">
-    <img src="assets/apartment/claude-glm-5-2/ref01_door_view.png" alt="claude ref1">
-    <img src="assets/apartment/claude-glm-5-2/ref02_window_view.png" alt="claude ref2">
-    <img src="assets/apartment/claude-glm-5-2/ref03_hallway.png" alt="claude ref3">
-    <img src="assets/apartment/claude-glm-5-2/ref04_bunkbed.png" alt="claude ref4">
-  </div>
-
-  <h3 style="margin-top:32px;margin-bottom:8px;font-size:18px;">Kimi K2.7 Baseline Renders</h3>
-  <div class="gallery">
-    <img src="assets/apartment/kimi/overview.png" alt="kimi overview">
-    <img src="assets/apartment/kimi/render_reference_01.png" alt="kimi ref1">
-    <img src="assets/apartment/kimi/render_reference_02.png" alt="kimi ref2">
-    <img src="assets/apartment/kimi/render_reference_03.png" alt="kimi ref3">
-    <img src="assets/apartment/kimi/render_reference_04.png" alt="kimi ref4">
-  </div>
 </div>
 
 <footer>
-  <p>Model Arena · <a href="https://github.com/vimalinx/model-arena">github.com/vimalinx/model-arena</a> · Real AI model outputs from TestMake suites</p>
+  <p>Model Arena · <a href="https://github.com/vimalinx/model-arena">github.com/vimalinx/model-arena</a> · Click cards to open real demos</p>
 </footer>
 
 </body>

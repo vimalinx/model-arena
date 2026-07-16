@@ -1,0 +1,98 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Apartment — claude-glm-5-2</title>
+<style>
+  *{margin:0;padding:0;box-sizing:border-box}
+  body{overflow:hidden;background:#111;color:#fff;font-family:system-ui,sans-serif}
+  #c{width:100vw;height:100vh;display:block}
+  #ui{position:absolute;top:12px;left:12px;z-index:10;background:rgba(0,0,0,.72);padding:14px 16px;border-radius:10px;max-width:300px;backdrop-filter:blur(8px)}
+  #ui h1{font-size:15px;margin-bottom:6px}
+  #ui p{font-size:12px;color:#bbb;line-height:1.5}
+  #ui a{color:#58a6ff;font-size:12px}
+  #loading{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;background:#111;z-index:5;font-size:16px}
+  #err{display:none;position:absolute;inset:0;align-items:center;justify-content:center;color:#f85149;z-index:6;padding:24px;text-align:center}
+</style>
+</head>
+<body>
+<div id="loading">加载 3D 模型…</div>
+<div id="err"></div>
+<div id="ui">
+  <h1>Apartment — claude-glm-5-2</h1>
+  <p>拖动旋转 · 滚轮缩放 · 右键平移<br>
+  <a href="renders/" target="_blank">查看渲染图</a> ·
+  <a href="../../..">返回 Arena</a></p>
+</div>
+<canvas id="c"></canvas>
+<script type="importmap">
+{"imports":{
+  "three":"https://unpkg.com/three@0.160.0/build/three.module.js",
+  "three/addons/":"https://unpkg.com/three@0.160.0/examples/jsm/"
+}}
+</script>
+<script type="module">
+import * as THREE from 'three';
+import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
+import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
+
+const canvas = document.getElementById('c');
+const renderer = new THREE.WebGLRenderer({canvas, antialias:true});
+renderer.setPixelRatio(Math.min(devicePixelRatio, 2));
+renderer.setSize(innerWidth, innerHeight);
+renderer.outputColorSpace = THREE.SRGBColorSpace;
+renderer.toneMapping = THREE.ACESFilmicToneMapping;
+renderer.toneMappingExposure = 1.1;
+
+const scene = new THREE.Scene();
+scene.background = new THREE.Color(0x1a1a1a);
+const camera = new THREE.PerspectiveCamera(50, innerWidth/innerHeight, 0.05, 200);
+camera.position.set(6, 4, 8);
+
+const controls = new OrbitControls(camera, canvas);
+controls.enableDamping = true;
+controls.target.set(1.6, 1.2, 1.0);
+
+scene.add(new THREE.AmbientLight(0xffffff, 0.55));
+const sun = new THREE.DirectionalLight(0xfff2e0, 1.2);
+sun.position.set(5, 10, 3);
+scene.add(sun);
+const fill = new THREE.DirectionalLight(0xb0c4ff, 0.35);
+fill.position.set(-4, 3, -2);
+scene.add(fill);
+
+const loader = new GLTFLoader();
+loader.load('apartment_reconstruction.glb', (gltf) => {
+  scene.add(gltf.scene);
+  // auto-frame
+  const box = new THREE.Box3().setFromObject(gltf.scene);
+  const size = box.getSize(new THREE.Vector3());
+  const center = box.getCenter(new THREE.Vector3());
+  controls.target.copy(center);
+  const maxDim = Math.max(size.x, size.y, size.z);
+  camera.position.copy(center).add(new THREE.Vector3(maxDim*0.9, maxDim*0.55, maxDim*0.9));
+  camera.near = maxDim/100; camera.far = maxDim*20; camera.updateProjectionMatrix();
+  document.getElementById('loading').style.display = 'none';
+}, undefined, (e) => {
+  document.getElementById('loading').style.display = 'none';
+  const err = document.getElementById('err');
+  err.style.display = 'flex';
+  err.textContent = '模型加载失败: ' + e.message;
+});
+
+addEventListener('resize', () => {
+  camera.aspect = innerWidth/innerHeight;
+  camera.updateProjectionMatrix();
+  renderer.setSize(innerWidth, innerHeight);
+});
+
+function tick(){
+  requestAnimationFrame(tick);
+  controls.update();
+  renderer.render(scene, camera);
+}
+tick();
+</script>
+</body>
+</html>
