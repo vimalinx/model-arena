@@ -1074,16 +1074,14 @@
             }
 
             isSolid(wx, wy, wz) {
-                const id = this.getBlock(wx, wy, wz);
-                if (id === 0) return false;
-                const block = Object.values(BLOCKS).find(b => b.id === id);
-                return block && block.solid;
+                return this.isBlockSolid(this.getBlock(wx, wy, wz));
             }
 
             isBlockSolid(id) {
                 if (id === 0) return false;
                 const block = Object.values(BLOCKS).find(b => b.id === id);
-                return block && block.solid;
+                if (!block) return true; // unknown block = solid
+                return block.solid !== false; // default true unless explicitly false
             }
         }
 
