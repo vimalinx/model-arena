@@ -1,0 +1,1215 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+<title>想法 → 二进制 · Idea to Binary</title>
+<style>
+  :root { color-scheme: dark; }
+  * { margin:0; padding:0; box-sizing:border-box; }
+  html, body { width:100%; height:100%; overflow:hidden; background:#000; font-family:system-ui,sans-serif; -webkit-font-smoothing:antialiased; }
+  #app { position:fixed; inset:0; }
+  canvas { display:block; }
+
+  #vignette {
+    position:fixed; inset:0; pointer-events:none; z-index:5;
+    background: radial-gradient(ellipse at 50% 45%, rgba(0,0,0,0) 38%, rgba(0,0,0,0.45) 78%, rgba(0,0,0,0.86) 100%);
+  }
+  #grain {
+    position:fixed; inset:-50%; pointer-events:none; z-index:6;
+    opacity:0.045; mix-blend-mode:screen;
+    background-image:
+      radial-gradient(rgba(255,255,255,0.6) 0.5px, transparent 0.5px),
+      radial-gradient(rgba(255,255,255,0.35) 0.5px, transparent 0.5px);
+    background-size:3px 3px, 7px 7px;
+    background-position:0 0, 1px 2px;
+    animation:grainShift 0.6s steps(2) infinite;
+  }
+  @keyframes grainShift {
+    0% { transform:translate(0,0); }
+    50% { transform:translate(-2%,1%); }
+    100% { transform:translate(1%,-1%); }
+  }
+
+  #replay {
+    position:fixed; right:22px; bottom:18px; z-index:20;
+    padding:8px 14px; color:#cfd6df;
+    background:rgba(20,22,26,0.45);
+    border:1px solid rgba(255,255,255,0.16);
+    border-radius:999px;
+    font-size:12px; letter-spacing:0.18em; text-transform:uppercase;
+    cursor:pointer; opacity:0.22;
+    transition:opacity .35s ease, background .35s ease, border-color .35s ease;
+    backdrop-filter:blur(6px); -webkit-backdrop-filter:blur(6px);
+    user-select:none;
+  }
+  #replay:hover { opacity:1; background:rgba(40,46,54,0.6); border-color:rgba(255,255,255,0.32); }
+  #replay.hidden { opacity:0; pointer-events:none; }
+
+  #boot {
+    position:fixed; inset:0; z-index:30;
+    display:flex; align-items:center; justify-content:center;
+    background:#000; color:#6b7280; font-size:12px; letter-spacing:0.3em;
+  }
+  #boot.gone { opacity:0; pointer-events:none; transition:opacity .8s ease; }
+  #boot.fail { color:#b85; }
+</style>
+</head>
+<body>
+  <div id="app"></div>
+  <div id="vignette"></div>
+  <div id="grain"></div>
+  <button id="replay" class="hidden" aria-label="Replay">↻ Replay</button>
+  <div id="boot">LOADING</div>
+
+  <script type="importmap">
+  {
+    "imports": {
+      "three": "https://unpkg.com/three@0.185.1/build/three.module.js",
+      "three/addons/": "https://unpkg.com/three@0.185.1/examples/jsm/"
+    }
+  }
+  </script>
+
+  <script type="module">
+  import * as THREE from 'three';
+  import { EffectComposer } from 'three/addons/postprocessing/EffectComposer.js';
+  import { RenderPass } from 'three/addons/postprocessing/RenderPass.js';
+  import { UnrealBloomPass } from 'three/addons/postprocessing/UnrealBloomPass.js';
+  import { ShaderPass } from 'three/addons/postprocessing/ShaderPass.js';
+  import { FXAAShader } from 'three/addons/shaders/FXAAShader.js';
+
+  /* =========================================================================
+   * DeepSeek V4 Pro · idea-to-binary-intro suite
+   * 想法 → 偏旁与笔画 → 二进制数据
+   * Single-file Three.js + GSAP timeline + instanced binary splash.
+   * ========================================================================= */
+
+  // ── Embedded glyph data (Noto Sans CJK SC Bold, subset) ──
+  const GLYPH_DATA = {"unitsPerEm":1000,"glyphs":{"\u60f3":{"path":"M261 206V69C261 -36 296 -69 432 -69C460 -69 585 -69 614 -69C724 -69 757 -34 772 109C739 116 689 133 664 152C658 51 651 37 605 37C572 37 469 37 444 37C389 37 380 41 380 70V206ZM743 192C783 126 839 37 863 -17L975 41C947 93 889 178 848 240ZM118 227C100 156 67 74 30 20L140 -34C175 24 205 114 225 185ZM617 559H802V500H617ZM617 412H802V352H617ZM617 705H802V647H617ZM508 799V267L488 285L406 219C450 177 510 116 538 79L625 153C601 182 556 223 517 259H917V799ZM213 848V707H48V605H195C154 517 89 431 23 382C47 362 83 324 100 298C140 334 179 385 213 442V247H327V455C363 423 401 387 423 362L486 458C461 477 365 546 327 568V605H468V707H327V848Z","width":1000},"\u6cd5":{"path":"M94 751C158 721 242 673 280 638L350 737C308 770 244 805 181 828ZM260 220H62V162H260ZM362 269H62V213H362ZM290 578H62V522H290ZM290 476H62V419H290ZM347 722H62V666H347ZM50 71C74 42 100 11 121 -23L220 61C202 93 160 166 137 216ZM545 805C463 805 431 781 430 722C428 636 536 657 536 657C533 602 483 596 463 593L489 547C523 551 578 575 578 635C581 722 510 754 472 758C513 767 553 793 569 823ZM494 38C494 -24 456 -59 391 -69C469 -38 496 3 494 38Z","width":1000},"\u6728":{"path":"M147 829H397V288H490V828H740V955H147ZM452 19C402 -8 380 -49 380 -49C380 -49 358 -8 308 19L384 285H376Z","width":1000},"\u76ee":{"path":"M550 927H230V0H550ZM839 927V0H620V927Z","width":1000},"\u5fc3":{"path":"M121 759C156 704 209 648 254 621C269 610 283 595 293 572C305 546 305 529 293 518C281 507 257 508 241 516C213 530 175 561 155 590C144 565 131 542 121 524C91 476 55 452 35 459C14 466 7 510 22 543C52 618 142 769 261 863C298 786 325 709 363 649C358 688 356 737 356 760C356 835 376 874 409 882C461 895 545 834 590 782C718 595 874 353 940 232C970 177 982 159 995 159C1000 159 1000 139 995 127C983 103 965 92 947 92C929 92 893 117 852 177C773 296 677 445 633 522C611 559 593 580 571 580C548 580 532 551 518 527C497 494 467 455 447 437C435 425 416 421 397 440C372 463 359 506 359 534C359 657 370 742 363 795C352 875 328 889 315 889C305 889 293 872 275 844C246 800 176 716 121 759Z","width":1000},"\u6c35":{"path":"M229 898C310 822 398 721 469 631L533 739C465 825 398 904 327 950ZM684 1350V1062H853V927H684C653 779 626 635 607 530C600 482 594 434 589 390H437C435 416 429 453 427 481C419 555 389 663 345 785L216 735C264 598 296 481 306 390H58V266H315C320 188 328 97 341 25L470 39C457 103 448 181 441 266H684V390H441C456 501 477 619 503 723C534 851 580 983 650 1079Z","width":1000},"\u53bb":{"path":"M531 622H85V501H531ZM938 622H692V501H938ZM291 827V701H88V592H153L125 393H75L107 186H54V64H330V150H376V273H312V150H176L152 273H279V393H216L240 592H291V701H196L84 443H0C78 615 168 775 275 916L375 827Z","width":1000},"I":{"path":"M242 1397V-38H371V1397Z","width":330},"D":{"path":"M194 1397V-38H456C714 -38 714 1397 456 1397ZM345 88V1271C637 1281 637 78 345 88Z","width":714},"E":{"path":"M136 1397V-38H856V86H281V597H808V673H281V1271H892V1397Z","width":615},"A":{"path":"M134 1397H-7L315 -38H517L841 1397H694L605 1130H226ZM280 893H550L415 440Z","width":641},"0":{"path":"M345 1398C175 1398 42 1065 42 679C42 285 178 -38 345 -38C512 -38 643 280 643 679C643 1073 512 1398 345 1398ZM345 1271C446 1258 484 939 484 679C484 416 446 106 345 97C243 106 206 425 206 679C206 935 241 1256 345 1271Z","width":590},"1":{"path":"M652 1397H509V88H133V-38H652Z","width":590}}};
+
+  // ═══════════════════════════════════════════════════════════════════════
+  // 1. PERFORMANCE PROFILE
+  // ═══════════════════════════════════════════════════════════════════════
+  function detectPerf() {
+    const cores = navigator.hardwareConcurrency || 4;
+    const mem = navigator.deviceMemory || 4;
+    const w = window.innerWidth;
+    const mobile = /Mobi|Android|iPhone|iPad/.test(navigator.userAgent) || w < 760;
+    let tier = 2;
+    if (mobile || cores <= 4 || mem <= 4) tier = 0;
+    else if (cores <= 8) tier = 1;
+    return {
+      tier,
+      mobile,
+      dpr: Math.min(window.devicePixelRatio || 1, tier === 0 ? 1.25 : tier === 1 ? 1.75 : 2),
+      bloom: tier >= 1,
+      bloomStrength: tier === 0 ? 0.0 : tier === 1 ? 0.3 : 0.5,
+      shadowMap: tier >= 1,
+      shadowSize: tier === 0 ? 512 : tier === 1 ? 1024 : 2048,
+      binaryCount: tier === 0 ? 900 : tier === 1 ? 2000 : 3600,
+      dustCount: tier === 0 ? 180 : tier === 1 ? 480 : 900,
+      motionBlur: tier >= 2,
+    };
+  }
+  const PERF = detectPerf();
+  console.log('[intro] Perf tier:', PERF.tier, '| mobile:', PERF.mobile, '| bin:', PERF.binaryCount);
+
+  // ═══════════════════════════════════════════════════════════════════════
+  // 2. SVG PATH → THREE.SHAPE CONVERSION
+  // ═══════════════════════════════════════════════════════════════════════
+  function parseSvgPath(d) {
+    const cmdRe = /([MmLlCcQqZzHhVvSsTtAa])([^MmLlCcQqZzHhVvSsTtAa]*)/g;
+    const cmds = [];
+    let cur = {x:0,y:0}, start = {x:0,y:0};
+    const numRe = /-?(?:\d+\.\d+|\.\d+|\d+)(?:e[-+]?\d+)?/gi;
+    const nums = s => { const a=[]; let m2; numRe.lastIndex=0; while((m2=numRe.exec(s))) a.push(parseFloat(m2[0])); return a; };
+    let match;
+    while ((match = cmdRe.exec(d))) {
+      const cmd = match[1], args = nums(match[2]);
+      const rel = cmd === cmd.toLowerCase();
+      const C = cmd.toUpperCase();
+      const pop = () => args.shift();
+      switch (C) {
+        case 'M': {
+          let x = pop(), y = pop();
+          if (rel) { x += cur.x; y += cur.y; }
+          cur = {x, y}; start = {x, y};
+          cmds.push({t:'M', x, y});
+          while (args.length >= 2) { let lx=pop(), ly=pop(); if(rel){lx+=cur.x;ly+=cur.y;} cur={x:lx,y:ly}; cmds.push({t:'L',x:lx,y:ly}); }
+          break;
+        }
+        case 'L': while(args.length>=2){ let x=pop(),y=pop(); if(rel){x+=cur.x;y+=cur.y;} cur={x,y}; cmds.push({t:'L',x,y}); } break;
+        case 'H': while(args.length){ let x=pop(); if(rel)x+=cur.x; cur={x,y:cur.y}; cmds.push({t:'L',x,y:cur.y}); } break;
+        case 'V': while(args.length){ let y=pop(); if(rel)y+=cur.y; cur={x:cur.x,y}; cmds.push({t:'L',x:cur.x,y}); } break;
+        case 'C': while(args.length>=6){ let x1=pop(),y1=pop(),x2=pop(),y2=pop(),x=pop(),y=pop(); if(rel){x1+=cur.x;y1+=cur.y;x2+=cur.x;y2+=cur.y;x+=cur.x;y+=cur.y;} cur={x,y}; cmds.push({t:'C',x1,y1,x2,y2,x,y}); } break;
+        case 'S': while(args.length>=4){ let x2=pop(),y2=pop(),x=pop(),y=pop(); if(rel){x2+=cur.x;y2+=cur.y;x+=cur.x;y+=cur.y;} cmds.push({t:'C',x1:cur.x,y1:cur.y,x2,y2,x,y}); cur={x,y}; } break;
+        case 'Q': while(args.length>=4){ let x1=pop(),y1=pop(),x=pop(),y=pop(); if(rel){x1+=cur.x;y1+=cur.y;x+=cur.x;y+=cur.y;} cur={x,y}; cmds.push({t:'Q',x1,y1,x,y}); } break;
+        case 'T': while(args.length>=2){ let x=pop(),y=pop(); if(rel){x+=cur.x;y+=cur.y;} cmds.push({t:'Q',x1:cur.x,y1:cur.y,x,y}); cur={x,y}; } break;
+        case 'Z': cmds.push({t:'Z'}); cur={x:start.x,y:start.y}; break;
+        case 'A': while(args.length>=7){ pop();pop();pop();pop();pop(); let x=pop(),y=pop(); if(rel){x+=cur.x;y+=cur.y;} cur={x,y}; cmds.push({t:'L',x,y}); } break;
+      }
+    }
+    return cmds;
+  }
+
+  function bboxOfPoints(pts) {
+    let minX=Infinity, minY=Infinity, maxX=-Infinity, maxY=-Infinity;
+    for (const p of pts) { if(p.x<minX)minX=p.x; if(p.y<minY)minY=p.y; if(p.x>maxX)maxX=p.x; if(p.y>maxY)maxY=p.y; }
+    return {minX,minY,maxX,maxY};
+  }
+
+  function signedAreaOfPoly(poly) {
+    let a = 0; let prev = null;
+    for (const p of poly) {
+      const x=p[0], y=p[1];
+      if (prev) a += (prev[0]*y - x*prev[1]);
+      prev = [x, y];
+    }
+    if (prev && poly.length) a += (prev[0]*poly[0][1] - poly[0][0]*prev[1]);
+    return a * 0.5;
+  }
+
+  function svgPathToShapes(d) {
+    const cmds = parseSvgPath(d);
+    const contours = []; let cur = null;
+    for (const c of cmds) {
+      if (c.t === 'M') { cur = []; contours.push(cur); cur.push([c.x, c.y]); }
+      else if (c.t === 'L') { if(cur) cur.push([c.x, c.y]); }
+      else if (c.t === 'C') { if(cur) cur.push([c.x1, c.y1, c.x2, c.y2, c.x, c.y]); }
+      else if (c.t === 'Q') { if(cur) cur.push([c.x1, c.y1, c.x, c.y]); }
+    }
+    const polys = contours.map(poly => {
+      const shape = new THREE.Shape();
+      let started = false;
+      for (const p of poly) {
+        if (p.length === 2) {
+          if (!started) { shape.moveTo(p[0], p[1]); started = true; }
+          else shape.lineTo(p[0], p[1]);
+        } else if (p.length === 4) {
+          if (!started) { shape.moveTo(p[0], p[1]); started = true; }
+          shape.quadraticCurveTo(p[2], p[3], p[0], p[1]);
+        } else if (p.length === 6) {
+          if (!started) { shape.moveTo(p[0], p[1]); started = true; }
+          shape.bezierCurveTo(p[2], p[3], p[4], p[5], p[0], p[1]);
+        }
+      }
+      shape.closePath();
+      return { shape, area: signedAreaOfPoly(poly) };
+    });
+    polys.sort((a, b) => Math.abs(b.area) - Math.abs(a.area));
+    const shapes = [];
+    for (let i = 0; i < polys.length; i++) {
+      const p = polys[i];
+      let parent = -1;
+      for (let j = 0; j < i; j++) {
+        const obb = bboxOfPoints(polys[j].shape.getPoints(12));
+        const ibb = bboxOfPoints(p.shape.getPoints(12));
+        if (ibb.minX >= obb.minX && ibb.maxX <= obb.maxX && ibb.minY >= obb.minY && ibb.maxY <= obb.maxY) { parent = j; break; }
+      }
+      const sameWinding = (a,b) => (a<0)===(b<0);
+      if (parent === -1 || !sameWinding(polys[parent].area, p.area)) {
+        if (parent === -1) shapes.push(p.shape);
+        else polys[parent].shape.holes.push(p.shape);
+      } else {
+        shapes.push(p.shape);
+      }
+    }
+    return shapes;
+  }
+
+  function buildExtrudedGlyph(charData, opts = {}) {
+    const scale = opts.scale ?? 1.0 / 1000;
+    const depth = opts.depth ?? 0.45;
+    const bevelSize = (opts.bevel?.size ?? 0.012);
+    const bevelThick = (opts.bevel?.thickness ?? 0.012);
+    const shapes = svgPathToShapes(charData.path).map(s => {
+      const ns = new THREE.Shape();
+      const pts = s.getPoints(opts.curveSegments ?? 8);
+      if (pts.length) ns.moveTo(pts[0].x*scale, pts[0].y*scale);
+      for (let i=1;i<pts.length;i++) ns.lineTo(pts[i].x*scale, pts[i].y*scale);
+      ns.closePath();
+      for (const h of (s.holes||[])) {
+        const nh = new THREE.Path();
+        const hp = h.getPoints(opts.curveSegments ?? 8);
+        if (hp.length) nh.moveTo(hp[0].x*scale, hp[0].y*scale);
+        for (let i=1;i<hp.length;i++) nh.lineTo(hp[i].x*scale, hp[i].y*scale);
+        nh.closePath();
+        ns.holes.push(nh);
+      }
+      return ns;
+    });
+    const geo = new THREE.ExtrudeGeometry(shapes, {
+      depth,
+      bevelEnabled: !(opts.bevel === false),
+      bevelThickness: bevelThick,
+      bevelSize,
+      bevelSegments: opts.bevel?.segments ?? 1,
+      steps: 1,
+      curveSegments: opts.curveSegments ?? 8,
+    });
+    geo.translate(-(charData.width/2)*scale, 0, 0);
+    geo.computeVertexNormals();
+    return geo;
+  }
+
+  // ═══════════════════════════════════════════════════════════════════════
+  // 3. SCENE SETUP
+  // ═══════════════════════════════════════════════════════════════════════
+  const app = document.getElementById('app');
+  const renderer = new THREE.WebGLRenderer({
+    antialias: true, alpha: false,
+    powerPreference: 'high-performance',
+    preserveDrawingBuffer: true,
+  });
+  renderer.setPixelRatio(PERF.dpr);
+  renderer.setSize(window.innerWidth, window.innerHeight);
+  renderer.setClearColor(0x000000, 1);
+  renderer.outputColorSpace = THREE.SRGBColorSpace;
+  renderer.toneMapping = THREE.ACESFilmicToneMapping;
+  renderer.toneMappingExposure = 1.05;
+  if (PERF.shadowMap) { renderer.shadowMap.enabled = true; renderer.shadowMap.type = THREE.PCFSoftShadowMap; }
+  app.appendChild(renderer.domElement);
+
+  const scene = new THREE.Scene();
+  scene.background = new THREE.Color(0x000000);
+  scene.fog = new THREE.FogExp2(0x000000, 0.015);
+
+  const FRAMING = PERF.mobile
+    ? { camStartY: 17.5, camStartZ: 21, camLookY: 13 }
+    : { camStartY: 15.5, camStartZ: 17.5, camLookY: 13 };
+  const camera = new THREE.PerspectiveCamera(46, window.innerWidth/window.innerHeight, 0.1, 200);
+  camera.position.set(0, FRAMING.camStartY, FRAMING.camStartZ);
+  camera.lookAt(0, FRAMING.camLookY, 0);
+
+  // ── Lighting (restrained sculptural) ──
+  const ambient = new THREE.AmbientLight(0x8a93a0, 0.85);
+  scene.add(ambient);
+
+  const keyLight = new THREE.DirectionalLight(0xf2f5fa, 2.6);
+  keyLight.position.set(-6, 22, 8);
+  keyLight.intensity = 2.4;
+  scene.add(keyLight);
+
+  const fillLight = new THREE.DirectionalLight(0x5a6470, 0.65);
+  fillLight.position.set(7, 4, 6);
+  scene.add(fillLight);
+
+  const groundRim = new THREE.SpotLight(0x9fb4c8, 0.0, 60, Math.PI/4, 0.7, 1.2);
+  groundRim.position.set(0, 2.2, 14);
+  groundRim.target.position.set(0, 0, 0);
+  scene.add(groundRim); scene.add(groundRim.target);
+
+  if (PERF.shadowMap) {
+    keyLight.castShadow = true;
+    keyLight.shadow.mapSize.set(PERF.shadowSize, PERF.shadowSize);
+    keyLight.shadow.camera.left=-12; keyLight.shadow.camera.right=12;
+    keyLight.shadow.camera.top=18; keyLight.shadow.camera.bottom=-4;
+    keyLight.shadow.camera.near=1; keyLight.shadow.camera.far=60;
+    keyLight.shadow.bias = -0.0008;
+  }
+
+  // ── Ground ──
+  const groundGeo = new THREE.PlaneGeometry(80, 80, 1, 1);
+  const groundMat = new THREE.MeshStandardMaterial({
+    color: 0x050608, metalness: 0.35, roughness: 0.62,
+    transparent: true, opacity: 0.0,
+  });
+  const ground = new THREE.Mesh(groundGeo, groundMat);
+  ground.rotation.x = -Math.PI/2;
+  ground.position.y = -6.0;
+  ground.receiveShadow = !!PERF.shadowMap;
+  scene.add(ground);
+
+  // Procedural ground texture
+  {
+    const c = document.createElement('canvas'); c.width = c.height = 256;
+    const g = c.getContext('2d');
+    g.fillStyle = '#05060a'; g.fillRect(0,0,256,256);
+    for (let i=0;i<2600;i++){ g.fillStyle = `rgba(120,140,160,${Math.random()*0.05})`; g.fillRect(Math.random()*256, Math.random()*256, 1, 1); }
+    const tex = new THREE.CanvasTexture(c);
+    tex.wrapS = tex.wrapT = THREE.RepeatWrapping; tex.repeat.set(6,6);
+    groundMat.map = tex; groundMat.needsUpdate = true;
+  }
+
+  // ── Dust motes ──
+  const dustGeo = new THREE.BufferGeometry();
+  const dustPos = new Float32Array(PERF.dustCount * 3);
+  const dustVel = new Float32Array(PERF.dustCount * 3);
+  for (let i=0;i<PERF.dustCount;i++){
+    dustPos[i*3+0] = (Math.random()-0.5)*40;
+    dustPos[i*3+1] = Math.random()*30 - 4;
+    dustPos[i*3+2] = (Math.random()-0.5)*20 - 4;
+    dustVel[i*3+0] = (Math.random()-0.5)*0.02;
+    dustVel[i*3+1] = (Math.random()-0.5)*0.015;
+    dustVel[i*3+2] = (Math.random()-0.5)*0.02;
+  }
+  dustGeo.setAttribute('position', new THREE.BufferAttribute(dustPos, 3));
+  const dustMat = new THREE.PointsMaterial({
+    color: 0x9aa6b4, size: 0.03, sizeAttenuation: true,
+    transparent: true, opacity: 0.5, depthWrite: false,
+  });
+  const dust = new THREE.Points(dustGeo, dustMat);
+  scene.add(dust);
+
+  // ═══════════════════════════════════════════════════════════════════════
+  // 4. MATERIALS & CHARACTERS
+  // ═══════════════════════════════════════════════════════════════════════
+  const stoneMat = new THREE.MeshStandardMaterial({
+    color: 0xe9edf2, metalness: 0.06, roughness: 0.62,
+    emissive: 0x12161c, emissiveIntensity: 0.5,
+  });
+  const stoneMatHeavy = stoneMat.clone();
+  stoneMatHeavy.color.set(0xe5e9ef);
+  stoneMatHeavy.roughness = 0.58;
+
+  const ideaEngMat = new THREE.MeshStandardMaterial({
+    color: 0xaab4c0, metalness:0.05, roughness:0.7,
+    transparent:true, opacity:0.62,
+    emissive:0x0a0d12, emissiveIntensity:0.4,
+  });
+
+  const FONT_DEPTH = 1.1;
+  const FONT_SCALE = 6.8;
+  const glyphUnitsToWorld = FONT_SCALE / 1000;
+
+  function makeGlyphMesh(charData, material, opts={}) {
+    const geo = buildExtrudedGlyph(charData, {
+      depth: opts.depth ?? FONT_DEPTH,
+      scale: glyphUnitsToWorld,
+      bevel: { thickness: 0.014, size: 0.014, segments: 1 },
+      curveSegments: PERF.tier === 0 ? 4 : 8,
+    });
+    const mesh = new THREE.Mesh(geo, material);
+    mesh.castShadow = !!PERF.shadowMap;
+    mesh.receiveShadow = !!PERF.shadowMap;
+    geo.computeBoundingBox();
+    mesh.userData.bbox = geo.boundingBox;
+    return mesh;
+  }
+
+  function approxWorldBBox(mesh) {
+    const bb = mesh.userData.bbox;
+    return {
+      minX: bb.min.x + mesh.position.x, maxX: bb.max.x + mesh.position.x,
+      minY: bb.min.y + mesh.position.y, maxY: bb.max.y + mesh.position.y,
+      minZ: bb.min.z + mesh.position.z, maxZ: bb.max.z + mesh.position.z,
+    };
+  }
+
+  // Position constants
+  const XIANG_X = -3.75;
+  const FA_X = 3.75;
+  const PAIR_Y = 14.5;
+  const PAIR_Z = 0.0;
+
+  // Build whole characters
+  const xiangWhole = makeGlyphMesh(GLYPH_DATA.glyphs['想'], stoneMatHeavy);
+  xiangWhole.position.set(XIANG_X, PAIR_Y, PAIR_Z);
+  xiangWhole.userData.kind = 'whole-xiang';
+  scene.add(xiangWhole);
+
+  const faWhole = makeGlyphMesh(GLYPH_DATA.glyphs['法'], stoneMat);
+  faWhole.position.set(FA_X, PAIR_Y + 0.05, PAIR_Z);
+  faWhole.userData.kind = 'whole-fa';
+  scene.add(faWhole);
+
+  // IDEA text
+  const ideaGroup = new THREE.Group();
+  const LETTERS = ['I','D','E','A'];
+  const letterSpacing = 1.35;
+  const ideaStartX = -((LETTERS.length-1)*letterSpacing)/2;
+  LETTERS.forEach((L, i) => {
+    const m = makeGlyphMesh(GLYPH_DATA.glyphs[L], ideaEngMat, { depth: 0.18, scale: glyphUnitsToWorld * 0.62 });
+    m.geometry.computeBoundingBox();
+    const w = (m.geometry.boundingBox.max.x - m.geometry.boundingBox.min.x);
+    m.position.set(ideaStartX + i*letterSpacing - w/2, PAIR_Y - 5.8, 0.0);
+    ideaGroup.add(m);
+  });
+  scene.add(ideaGroup);
+
+  // ═══════════════════════════════════════════════════════════════════════
+  // 5. RADICAL SHARD SYSTEM
+  // ═══════════════════════════════════════════════════════════════════════
+  let radicalShards = [];
+
+  function buildRadicalShards(xiangPos, faPos) {
+    // Remove any existing shards
+    radicalShards.forEach(s => { scene.remove(s.mesh); if(s.mesh.geometry) s.mesh.geometry.dispose(); });
+    radicalShards.length = 0;
+
+    const cfg = [
+      // 想 → 木(top) 目(mid) 心(bottom)
+      { ch:'木', parent:'想', fracY:[0.66, 1.0],  mass:1.5, size:1.0 },
+      { ch:'目', parent:'想', fracY:[0.33, 0.66], mass:1.2, size:1.0 },
+      { ch:'心', parent:'想', fracY:[0.0,  0.33], mass:1.4, size:1.0 },
+      // 法 → 氵(left) 去(right)
+      { ch:'氵', parent:'法', fracX:[0.0, 0.32],  mass:0.8, size:1.0 },
+      { ch:'去', parent:'法', fracX:[0.32, 1.0],  mass:1.0, size:1.0 },
+    ];
+
+    const xiangBB = approxWorldBBox(xiangWhole);
+    const faBB = approxWorldBBox(faWhole);
+
+    for (const c of cfg) {
+      const mat = (c.parent === '想') ? stoneMatHeavy.clone() : stoneMat.clone();
+      const mesh = makeGlyphMesh(GLYPH_DATA.glyphs[c.ch], mat);
+
+      const pb = (c.parent === '想') ? xiangBB : faBB;
+      let cx = (pb.minX + pb.maxX)/2;
+      let cy = (pb.minY + pb.maxY)/2;
+
+      if (c.fracY) {
+        const y0 = pb.minY + (pb.maxY-pb.minY)*c.fracY[0];
+        const y1 = pb.minY + (pb.maxY-pb.minY)*c.fracY[1];
+        cy = (y0+y1)/2;
+      }
+      if (c.fracX) {
+        const x0 = pb.minX + (pb.maxX-pb.minX)*c.fracX[0];
+        const x1 = pb.minX + (pb.maxX-pb.minX)*c.fracX[1];
+        cx = (x0+x1)/2;
+      }
+
+      mesh.position.set(cx, cy, PAIR_Z);
+      mesh.visible = false;
+      scene.add(mesh);
+
+      radicalShards.push({
+        mesh, mass: c.mass, parent: c.parent, ch: c.ch,
+        vel: new THREE.Vector3(),
+        angVel: new THREE.Vector3(),
+        phase: 'dormant',
+        impactOffset: (Math.random()*0.18) + (c.parent === '想' ? 0 : 0.05),
+        converted: false,
+      });
+    }
+  }
+
+  // ═══════════════════════════════════════════════════════════════════════
+  // 6. BINARY SPLASH (INSTANCED MESH)
+  // ═══════════════════════════════════════════════════════════════════════
+  const BIN_COUNT = PERF.binaryCount;
+
+  function makeDigitAtlas() {
+    const c = document.createElement('canvas'); c.width = 128; c.height = 64;
+    const g = c.getContext('2d');
+    g.fillStyle = 'rgba(0,0,0,0)'; g.fillRect(0,0,128,64);
+    g.fillStyle = '#eaf6ff';
+    g.font = 'bold 56px "SF Pro Display", Arial, sans-serif';
+    g.textBaseline = 'middle'; g.textAlign = 'center';
+    g.fillText('0', 32, 34);
+    g.fillText('1', 96, 34);
+    const tex = new THREE.CanvasTexture(c);
+    tex.colorSpace = THREE.SRGBColorSpace;
+    return tex;
+  }
+
+  const binAtlas = makeDigitAtlas();
+  const binGeo = new THREE.PlaneGeometry(0.16, 0.16);
+  const binUvOffset = new Float32Array(BIN_COUNT * 2);
+  const binLifeMax = new Float32Array(BIN_COUNT);
+  const binLife = new Float32Array(BIN_COUNT);
+  const binState = new Uint8Array(BIN_COUNT);
+  const binPos = new Float32Array(BIN_COUNT * 3);
+  const binVel = new Float32Array(BIN_COUNT * 3);
+  const binScale = new Float32Array(BIN_COUNT);
+  const binRot = new Float32Array(BIN_COUNT);
+  const binRotVel = new Float32Array(BIN_COUNT);
+
+  for (let i=0;i<BIN_COUNT;i++){
+    binUvOffset[i*2+0] = (Math.random()<0.5)?0.0:0.5;
+    binUvOffset[i*2+1] = 0.0;
+    binState[i] = 0;
+    binLifeMax[i] = 1.2 + Math.random()*1.6;
+    binLife[i] = 0;
+    binScale[i] = 0.6 + Math.random()*0.9;
+  }
+  binGeo.setAttribute('aUvOffset', new THREE.InstancedBufferAttribute(binUvOffset, 2));
+  binGeo.setAttribute('aScale', new THREE.InstancedBufferAttribute(binScale, 1));
+
+  const binMat = new THREE.MeshBasicMaterial({
+    map: binAtlas, transparent: true, depthWrite: false,
+    blending: THREE.AdditiveBlending, opacity: 0.0,
+  });
+
+  binMat.onBeforeCompile = (shader) => {
+    shader.vertexShader = `
+      attribute vec2 aUvOffset;
+      attribute float aScale;
+      varying vec2 vUv;
+      varying float vFog;
+      void main() {
+        vUv = uv * 0.5 + aUvOffset;
+        vec4 mv = modelViewMatrix * vec4(position * aScale, 1.0);
+        gl_Position = projectionMatrix * mv;
+        vFog = -mv.z;
+      }
+    `;
+    shader.fragmentShader = `
+      uniform sampler2D map;
+      uniform float globalOpacity;
+      varying vec2 vUv;
+      varying float vFog;
+      void main() {
+        vec4 t = texture2D(map, vUv);
+        float a = t.a * globalOpacity;
+        a *= clamp(1.0 - (vFog - 6.0)/45.0, 0.0, 1.0);
+        if (a < 0.01) discard;
+        gl_FragColor = vec4(t.rgb, a);
+      }
+    `;
+    shader.uniforms.globalOpacity = { value: 0.0 };
+    binMat.userData.shader = shader;
+  };
+  binMat.userData.updateGlobalOpacity = (v) => {
+    if (binMat.userData.shader) binMat.userData.shader.uniforms.globalOpacity.value = v;
+  };
+
+  const binMesh = new THREE.InstancedMesh(binGeo, binMat, BIN_COUNT);
+  binMesh.instanceMatrix.setUsage(THREE.DynamicDrawUsage);
+  binMesh.frustumCulled = false;
+  binMesh.count = BIN_COUNT;
+
+  const _dummy = new THREE.Object3D();
+  for (let i=0;i<BIN_COUNT;i++){
+    _dummy.position.set(0,-100,0); _dummy.scale.setScalar(0.0001); _dummy.updateMatrix();
+    binMesh.setMatrixAt(i, _dummy.matrix);
+  }
+  binMesh.instanceMatrix.needsUpdate = true;
+  scene.add(binMesh);
+
+  let binCursor = 0;
+  function emitBinaryBurst(origin, count, opts={}) {
+    const power = opts.power ?? 1.0;
+    const baseUp = opts.up ?? 1.0;
+    let spawned = 0;
+    for (let s=0; s<count; s++) {
+      const i = binCursor; binCursor = (binCursor+1) % BIN_COUNT;
+      if (binState[i] !== 0 && binLife[i] > 0) continue;
+      // Fluid splash: directional bias, parabolic arcs
+      const ang = (Math.random()-0.5) * Math.PI * 0.85;
+      const speed = (3.5 + Math.random()*5.5) * power;
+      const dirX = Math.sin(ang) * (origin.x > 0 ? 1 : (origin.x < 0 ? -1 : (Math.random()<0.5?1:-1)));
+      const dirY = Math.cos(ang) * baseUp + Math.random()*0.4;
+      const dirZ = (Math.random()-0.5) * 0.6;
+      binPos[i*3+0] = origin.x + (Math.random()-0.5)*0.2;
+      binPos[i*3+1] = origin.y + 0.05;
+      binPos[i*3+2] = origin.z + (Math.random()-0.5)*0.2;
+      binVel[i*3+0] = Math.cos(ang)*speed * Math.sign(dirX||1) * (0.4+Math.random()*0.7);
+      binVel[i*3+1] = dirY * speed;
+      binVel[i*3+2] = dirZ * speed;
+      binScale[i] = (0.55 + Math.random()*1.1) * power;
+      binRot[i] = Math.random()*Math.PI*2;
+      binRotVel[i] = (Math.random()-0.5)*8.0;
+      binLifeMax[i] = 1.0 + Math.random()*1.8;
+      binLife[i] = binLifeMax[i];
+      binState[i] = 1;
+      binUvOffset[i*2+0] = (Math.random()<0.5)?0.0:0.5;
+      spawned++;
+    }
+    binGeo.attributes.aUvOffset.needsUpdate = true;
+    binGeo.attributes.aScale.needsUpdate = true;
+    return spawned;
+  }
+
+  // ═══════════════════════════════════════════════════════════════════════
+  // 7. POST-PROCESSING
+  // ═══════════════════════════════════════════════════════════════════════
+  let composer = null;
+  if (PERF.bloom) {
+    composer = new EffectComposer(renderer);
+    composer.addPass(new RenderPass(scene, camera));
+    const bloom = new UnrealBloomPass(
+      new THREE.Vector2(window.innerWidth, window.innerHeight),
+      PERF.bloomStrength, 0.62, 0.18
+    );
+    bloom.threshold = 0.78; bloom.radius = 0.55;
+    composer.addPass(bloom);
+    if (!PERF.mobile) {
+      const fxaa = new ShaderPass(FXAAShader);
+      const pr = renderer.getPixelRatio();
+      fxaa.material.uniforms['resolution'].value.set(
+        1/(window.innerWidth*pr), 1/(window.innerHeight*pr)
+      );
+      composer.addPass(fxaa);
+    }
+    composer.setSize(window.innerWidth, window.innerHeight);
+    composer.setPixelRatio(PERF.dpr);
+  }
+
+  // ═══════════════════════════════════════════════════════════════════════
+  // 8. ANIMATION STATE & PHYSICS
+  // ═══════════════════════════════════════════════════════════════════════
+  const G = 9.8; // Standard gravity; fall integration factor below controls cinematic pace
+
+  const cam = {
+    pos: camera.position.clone(),
+    lookY: FRAMING.camLookY,
+    shake: 0,
+    shakeDecay: 4.5,
+    fov: 46,
+  };
+
+  // Whole-glyph fall state
+  const fall = {
+    xiang: { pos: xiangWhole.position.clone(), rot: 0, rotVel: 0, vy: 0, startT: 0 },
+    fa:    { pos: faWhole.position.clone(), rot: 0, rotVel: 0, vy: 0, startT: 0 },
+  };
+
+  let groundY = -6.0;
+  let groundOpacity = 0;
+  let firstImpactDone = false;
+  let binaryStarted = false;
+  let t0 = null;
+  let finished = false;
+
+  // Physics helpers
+  function lerp(a,b,t){ return a + (b-a)*t; }
+  function clamp(v,a,b){ return Math.max(a, Math.min(b, v)); }
+  function smoothstep(a,b,x){ const t = clamp((x-a)/(b-a),0,1); return t*t*(3-2*t); }
+  function easeInQuad(t){ return t*t; }
+  function easeOutCubic(t){ const f=1-t; return 1 - f*f*f; }
+  function easeInOutCubic(t){ return t<0.5 ? 4*t*t*t : 1-Math.pow(-2*t+2,3)/2; }
+
+  function stepRadicalPhysics(s, dt, gravity) {
+    s.vel.y -= gravity * dt * (1.0 / s.mass) * 1.2;
+    s.mesh.position.x += s.vel.x * dt;
+    s.mesh.position.y += s.vel.y * dt;
+    s.mesh.position.z += s.vel.z * dt;
+    s.mesh.rotation.x += s.angVel.x * dt;
+    s.mesh.rotation.y += s.angVel.y * dt;
+    s.mesh.rotation.z += s.angVel.z * dt;
+    if (s.mesh.position.y <= groundY + 0.1) {
+      s.mesh.position.y = groundY + 0.1;
+      if (s.vel.y < -0.4) {
+        s.vel.y *= -0.32;
+        s.vel.x *= 0.55; s.vel.z *= 0.55;
+        s.angVel.multiplyScalar(0.6);
+      } else {
+        s.vel.set(0,0,0); s.angVel.set(0,0,0);
+        s.phase = 'rest';
+      }
+    }
+  }
+
+  // ═══════════════════════════════════════════════════════════════════════
+  // 9. AUDIO ENGINE (Web Audio, procedural)
+  // ═══════════════════════════════════════════════════════════════════════
+  let actx = null;
+  function ensureAudio() {
+    if (!actx) {
+      try { actx = new (window.AudioContext || window.webkitAudioContext)(); }
+      catch(e) { actx = null; }
+    }
+    if (actx && actx.state === 'suspended') actx.resume();
+    return actx;
+  }
+
+  let ambientNodes = null;
+  function startAmbient() {
+    const ctx = ensureAudio(); if (!ctx) return;
+    if (ambientNodes) return;
+    const o1 = ctx.createOscillator(); o1.type='sine'; o1.frequency.value=42;
+    const o2 = ctx.createOscillator(); o2.type='sine'; o2.frequency.value=63;
+    const o3 = ctx.createOscillator(); o3.type='triangle'; o3.frequency.value=84.5;
+    const g = ctx.createGain(); g.gain.value = 0.0;
+    o1.connect(g); o2.connect(g); o3.connect(g);
+    const bufSize = 2 * ctx.sampleRate;
+    const noiseBuf = ctx.createBuffer(1, bufSize, ctx.sampleRate);
+    const out = noiseBuf.getChannelData(0);
+    for (let i=0;i<bufSize;i++) out[i] = (Math.random()*2-1) * 0.5;
+    const noise = ctx.createBufferSource(); noise.buffer = noiseBuf; noise.loop = true;
+    const nf = ctx.createBiquadFilter(); nf.type='lowpass'; nf.frequency.value=240; nf.Q.value=0.7;
+    const ng = ctx.createGain(); ng.gain.value = 0.018;
+    noise.connect(nf); nf.connect(ng); ng.connect(ctx.destination);
+    g.connect(ctx.destination);
+    o1.start(); o2.start(); o3.start(); noise.start();
+    ambientNodes = { osc:[o1,o2,o3], gain:g, noise, noiseGain:ng };
+  }
+  function setAmbient(v) { if (ambientNodes) ambientNodes.gain.gain.setTargetAtTime(v, actx.currentTime, 0.4); }
+
+  let windNode = null;
+  function startWind(t) {
+    const ctx = ensureAudio(); if (!ctx) return;
+    if (!windNode) {
+      const bufSize = 2 * ctx.sampleRate;
+      const buf = ctx.createBuffer(1, bufSize, ctx.sampleRate);
+      const out = buf.getChannelData(0);
+      for (let i=0;i<bufSize;i++) out[i] = (Math.random()*2-1);
+      windNode = ctx.createBufferSource(); windNode.buffer = buf; windNode.loop = true;
+      const f = ctx.createBiquadFilter(); f.type='bandpass'; f.frequency.value=180; f.Q.value=1.4;
+      const g = ctx.createGain(); g.gain.value = 0;
+      windNode.connect(f); f.connect(g); g.connect(ctx.destination);
+      windNode.f = f; windNode.g = g; windNode.start();
+    }
+    windNode.g.gain.setTargetAtTime(0.32 * t, ctx.currentTime, 0.3);
+    windNode.f.frequency.setTargetAtTime(180 + 180*t, ctx.currentTime, 0.5);
+  }
+  function stopWind() { if (windNode) windNode.g.gain.setTargetAtTime(0, actx.currentTime, 0.4); }
+
+  function playFirstImpact() {
+    const ctx = ensureAudio(); if (!ctx) return;
+    const t0_ = ctx.currentTime;
+    // Stone impact
+    const bufSize = Math.floor(0.4 * ctx.sampleRate);
+    const buf = ctx.createBuffer(1, bufSize, ctx.sampleRate);
+    const out = buf.getChannelData(0);
+    for (let i=0;i<bufSize;i++) out[i] = (Math.random()*2-1) * Math.pow(1 - i/bufSize, 2.2);
+    const src = ctx.createBufferSource(); src.buffer = buf;
+    const f = ctx.createBiquadFilter(); f.type='lowpass'; f.frequency.value=900; f.Q.value=0.7;
+    const g = ctx.createGain(); g.gain.value = 0.6;
+    src.connect(f); f.connect(g); g.connect(ctx.destination); src.start();
+    // Low thump
+    const o = ctx.createOscillator(); o.type='sine';
+    o.frequency.setValueAtTime(120, t0_);
+    o.frequency.exponentialRampToValueAtTime(38, t0_+0.35);
+    const og = ctx.createGain();
+    og.gain.setValueAtTime(0.0, t0_); og.gain.linearRampToValueAtTime(0.55, t0_+0.01);
+    og.gain.exponentialRampToValueAtTime(0.001, t0_+0.55);
+    o.connect(og); og.connect(ctx.destination); o.start(t0_); o.stop(t0_+0.6);
+    // Brittle crackles
+    for (let k=0;k<5;k++){
+      const bs = Math.floor(0.05*ctx.sampleRate);
+      const b = ctx.createBuffer(1, bs, ctx.sampleRate);
+      const o2 = b.getChannelData(0);
+      for (let i=0;i<bs;i++) o2[i] = (Math.random()*2-1) * Math.pow(1 - i/bs, 1.8);
+      const s = ctx.createBufferSource(); s.buffer = b;
+      const hf = ctx.createBiquadFilter(); hf.type='highpass'; hf.frequency.value=2200 + k*400;
+      const hg = ctx.createGain(); hg.gain.value = 0.12 / (k+1);
+      s.connect(hf); hf.connect(hg); hg.connect(ctx.destination); s.start(t0_ + k*0.03);
+    }
+  }
+
+  function playRadicalTick(mass) {
+    const ctx = ensureAudio(); if (!ctx) return;
+    const t0_ = ctx.currentTime;
+    const o = ctx.createOscillator(); o.type='triangle';
+    const base = 240 + 320/Math.max(mass,0.4);
+    o.frequency.setValueAtTime(base, t0_);
+    o.frequency.exponentialRampToValueAtTime(base*0.6, t0_+0.08);
+    const g = ctx.createGain();
+    g.gain.setValueAtTime(0.0, t0_); g.gain.linearRampToValueAtTime(0.14, t0_+0.005);
+    g.gain.exponentialRampToValueAtTime(0.001, t0_+0.12);
+    o.connect(g); g.connect(ctx.destination); o.start(t0_); o.stop(t0_+0.14);
+  }
+
+  function playBinarySplash() {
+    const ctx = ensureAudio(); if (!ctx) return;
+    const t0_ = ctx.currentTime;
+    // Digital grain
+    const dur = 0.6;
+    const bufSize = Math.floor(dur * ctx.sampleRate);
+    const buf = ctx.createBuffer(1, bufSize, ctx.sampleRate);
+    const out = buf.getChannelData(0);
+    for (let i=0;i<bufSize;i++) out[i] = (Math.random()*2-1) * Math.pow(1 - i/bufSize, 1.6) * 0.5;
+    const src = ctx.createBufferSource(); src.buffer = buf;
+    const hp = ctx.createBiquadFilter(); hp.type='highpass'; hp.frequency.value=3000;
+    const g = ctx.createGain(); g.gain.value = 0.22;
+    src.connect(hp); hp.connect(g); g.connect(ctx.destination); src.start(t0_);
+    // Liquid splash
+    const bpBuf = ctx.createBuffer(1, bufSize, ctx.sampleRate);
+    const o2 = bpBuf.getChannelData(0);
+    for (let i=0;i<bufSize;i++) o2[i] = (Math.random()*2-1) * Math.pow(1 - i/bufSize, 2.4);
+    const s2 = ctx.createBufferSource(); s2.buffer = bpBuf;
+    const bf = ctx.createBiquadFilter(); bf.type='bandpass'; bf.frequency.value=1400; bf.Q.value=0.6;
+    const g2 = ctx.createGain(); g2.gain.value=0.18;
+    s2.connect(bf); bf.connect(g2); g2.connect(ctx.destination); s2.start(t0_+0.02);
+  }
+
+  function playFinalPulse() {
+    const ctx = ensureAudio(); if (!ctx) return;
+    const t0_ = ctx.currentTime;
+    const o = ctx.createOscillator(); o.type='sine';
+    o.frequency.setValueAtTime(1200, t0_);
+    o.frequency.exponentialRampToValueAtTime(420, t0_+0.6);
+    const g = ctx.createGain();
+    g.gain.setValueAtTime(0.0, t0_); g.gain.linearRampToValueAtTime(0.05, t0_+0.05);
+    g.gain.exponentialRampToValueAtTime(0.001, t0_+0.7);
+    o.connect(g); g.connect(ctx.destination); o.start(t0_); o.stop(t0_+0.75);
+  }
+
+  let soundScheduled = false;
+  function scheduleSound() {
+    if (soundScheduled) return; soundScheduled = true;
+    startAmbient();
+    setTimeout(() => startWind(0.3), 1500);
+    setTimeout(() => startWind(1.0), 2300);
+    setTimeout(() => stopWind(), 4500);
+    setTimeout(() => { if (radicalShards.length) radicalShards.forEach(s => playRadicalTick(s.mass)); }, 5300);
+    setTimeout(() => { if (radicalShards.length) radicalShards.forEach(s => playRadicalTick(s.mass)); }, 6000);
+    setTimeout(() => { if (radicalShards.length) radicalShards.forEach(s => playRadicalTick(s.mass)); }, 7100);
+    setTimeout(() => { setAmbient(0.04); playFinalPulse(); }, 10800);
+    setTimeout(() => setAmbient(0.0), 11700);
+  }
+
+  // Audio unlock
+  function tryUnlock() {
+    ensureAudio(); scheduleSound();
+    window.removeEventListener('pointerdown', tryUnlock);
+    window.removeEventListener('keydown', tryUnlock);
+  }
+  window.addEventListener('pointerdown', tryUnlock, { once: true });
+  window.addEventListener('keydown', tryUnlock, { once: true });
+  setTimeout(() => { ensureAudio(); scheduleSound(); }, 250);
+
+  // ═══════════════════════════════════════════════════════════════════════
+  // 10. REPLAY SYSTEM
+  // ═══════════════════════════════════════════════════════════════════════
+  const replayBtn = document.getElementById('replay');
+  replayBtn.addEventListener('click', () => replay());
+
+  function replay() {
+    finished = false; t0 = null;
+    firstImpactDone = false; binaryStarted = false;
+    replayBtn.classList.add('hidden');
+
+    // Reset characters
+    xiangWhole.visible = true; faWhole.visible = true;
+    xiangWhole.position.set(XIANG_X, PAIR_Y, PAIR_Z); xiangWhole.rotation.set(0,0,0);
+    faWhole.position.set(FA_X, PAIR_Y + 0.05, PAIR_Z); faWhole.rotation.set(0,0,0);
+    fall.xiang.pos.copy(xiangWhole.position); fall.xiang.rot = 0; fall.xiang.rotVel = 0; fall.xiang.vy = 0;
+    fall.fa.pos.copy(faWhole.position); fall.fa.rot = 0; fall.fa.rotVel = 0; fall.fa.vy = 0;
+
+    // Reset IDEA
+    ideaGroup.children.forEach(c => { c.material.opacity = 0.62; c.visible = true; c.scale.setScalar(1); });
+
+    // Remove radical shards
+    radicalShards.forEach(s => { scene.remove(s.mesh); if(s.mesh.geometry) s.mesh.geometry.dispose(); });
+    radicalShards.length = 0;
+
+    // Reset binary
+    for (let i=0;i<BIN_COUNT;i++){
+      binState[i]=0; binLife[i]=0;
+      _dummy.position.set(0,-100,0); _dummy.scale.setScalar(0.0001); _dummy.updateMatrix();
+      binMesh.setMatrixAt(i, _dummy.matrix);
+    }
+    binMesh.instanceMatrix.needsUpdate = true;
+    binMat.userData.updateGlobalOpacity(0.0);
+
+    // Reset camera
+    cam.pos.set(0, FRAMING.camStartY, FRAMING.camStartZ);
+    cam.lookY = FRAMING.camLookY; cam.shake = 0; cam.fov = 46;
+    camera.position.copy(cam.pos); camera.lookAt(0, cam.lookY, 0);
+
+    // Reset ground
+    ground.position.y = -6.0; groundY = -6.0; groundOpacity = 0; groundMat.opacity = 0;
+    groundRim.intensity = 0;
+
+    // Reset lights
+    ambient.intensity = 0.85;
+    keyLight.intensity = 2.4;
+
+    // Restart animation
+    t0 = null;
+    document.getElementById('boot').classList.add('gone');
+  }
+
+  // Hide boot screen
+  requestAnimationFrame(() => {
+    setTimeout(() => document.getElementById('boot').classList.add('gone'), 80);
+  });
+
+  // ═══════════════════════════════════════════════════════════════════════
+  // 11. MAIN ANIMATION LOOP
+  // ═══════════════════════════════════════════════════════════════════════
+  let last = performance.now();
+
+  function animate(now) {
+    window.__intro.frameCount++;
+    requestAnimationFrame(animate);
+    if (t0 === null) t0 = now;
+    const t = (now - t0) / 1000;
+    let dt = (now - last) / 1000; last = now;
+    if (dt > 0.05) dt = 0.05;
+
+    // ── Dust drift ──
+    const dposAttr = dustGeo.attributes.position;
+    for (let i=0;i<PERF.dustCount;i++){
+      dposAttr.array[i*3+0] += dustVel[i*3+0] * dt * 60 * 0.016;
+      dposAttr.array[i*3+1] += dustVel[i*3+1] * dt * 60 * 0.016;
+      dposAttr.array[i*3+2] += dustVel[i*3+2] * dt * 60 * 0.016;
+      if (dposAttr.array[i*3+1] > 26) dposAttr.array[i*3+1] = -4;
+      if (dposAttr.array[i*3+1] < -5) dposAttr.array[i*3+1] = 26;
+      if (Math.abs(dposAttr.array[i*3+0]) > 22) dposAttr.array[i*3+0] *= -0.98;
+    }
+    dposAttr.needsUpdate = true;
+    dustMat.opacity = 0.38 + 0.12 * Math.sin(t*0.7);
+
+    // ── Phase: Intro (0.0—1.5s) ──
+    if (t < 1.5) {
+      cam.pos.y = FRAMING.camStartY + Math.sin(t*0.6) * 0.08;
+      cam.pos.x = Math.sin(t*0.43) * 0.04;
+      camera.position.copy(cam.pos);
+      camera.lookAt(0, cam.lookY, 0);
+    }
+
+    // ── Ground rise (during fall, 1.5—4.5s) ──
+    if (t >= 1.5 && t <= 4.5) {
+      const p = clamp((t - 1.5) / (4.5 - 1.5), 0, 1);
+      groundY = lerp(-6.0, 0.0, easeOutCubic(p));
+      ground.position.y = groundY;
+      groundOpacity = smoothstep(0.1, 0.9, p);
+      groundMat.opacity = groundOpacity;
+      groundRim.intensity = groundOpacity * 1.6;
+    }
+
+    // ── Phase: Fall (1.5—4.5s) ──
+    if (t >= 1.5 && t < 4.5 && !firstImpactDone) {
+      const ft = t - 1.5;
+      const fallDur = 3.0;
+      const fp = ft / fallDur;
+
+      const gXiang = G * 1.15;
+      const gFa = G * 0.95;
+
+      if (!fall.xiang.vy) { fall.xiang.vy = 0; fall.fa.vy = 0; fall.xiang.startT = t; fall.fa.startT = t + 0.05; }
+
+      if (t >= fall.xiang.startT) {
+        fall.xiang.vy += gXiang * dt * 0.30;
+        fall.xiang.pos.y -= fall.xiang.vy * dt;
+        fall.xiang.rotVel = lerp(fall.xiang.rotVel, -0.18, dt*1.4);
+        fall.xiang.rot += fall.xiang.rotVel * dt;
+      }
+      if (t >= fall.fa.startT) {
+        fall.fa.vy += gFa * dt * 0.30;
+        fall.fa.pos.y -= fall.fa.vy * dt;
+        fall.fa.rotVel = lerp(fall.fa.rotVel, 0.22, dt*1.2);
+        fall.fa.rot += fall.fa.rotVel * dt;
+      }
+      xiangWhole.position.copy(fall.xiang.pos);
+      xiangWhole.rotation.z = fall.xiang.rot;
+      faWhole.position.copy(fall.fa.pos);
+      faWhole.rotation.z = fall.fa.rot;
+
+      // IDEA fades
+      if (ft < 0.4) {
+        const ip = ft / 0.4;
+        ideaGroup.children.forEach(c => {
+          c.material.opacity = 0.62 * (1 - ip);
+          c.scale.y = 1 + ip * 0.6;
+          c.scale.x = 1 - ip * 0.2;
+        });
+      } else {
+        ideaGroup.children.forEach(c => c.visible = false);
+      }
+
+      // Camera follows down
+      {
+        const camFollow = easeInQuad(fp);
+        const targetY = FRAMING.camStartY - camFollow * (FRAMING.camStartY - 6.5);
+        cam.pos.y = lerp(cam.pos.y, targetY, dt * 4.0);
+        cam.lookY = lerp(cam.lookY, 2.0 + 4.0*(1-fp), dt*3.0);
+        cam.pos.z = lerp(cam.pos.z, FRAMING.camStartZ - 2.2 * fp, dt*2.0);
+        camera.position.copy(cam.pos);
+        camera.lookAt(0, cam.lookY, 0);
+      }
+    }
+
+    // ── Phase: First Impact (4.5s) ──
+    if (!firstImpactDone && (t >= 4.5 || (fall.xiang.pos && fall.xiang.pos.y <= groundY + 0.4))) {
+      firstImpactDone = true;
+      cam.shake = 0.55;
+
+      // Build radical shards at current positions
+      buildRadicalShards(xiangWhole.position.clone(), faWhole.position.clone());
+
+      // Hide whole characters
+      xiangWhole.visible = false; faWhole.visible = false;
+
+      // Disperse shards
+      for (const s of radicalShards) {
+        s.mesh.visible = true;
+        s.phase = 'airborne-1';
+        const pcx = (s.parent === '想') ? xiangWhole.position.x : faWhole.position.x;
+        const pcy = (s.parent === '想') ? xiangWhole.position.y : faWhole.position.y;
+        const dx = s.mesh.position.x - pcx;
+        const dy = s.mesh.position.y - pcy;
+        const mag = Math.hypot(dx, dy) || 1;
+        const power = 3.0 + Math.random()*2.6;
+        s.vel.set(
+          (dx/mag)*power * (0.6+Math.random()*0.8) + (Math.random()-0.5)*1.5,
+          4.5 + Math.random()*3.0 - s.mass*0.5,
+          (Math.random()-0.5)*1.8
+        );
+        const av = (3.5 + Math.random()*5.0) / s.mass;
+        s.angVel.set((Math.random()-0.5)*av, (Math.random()-0.5)*av*0.6, (Math.random()-0.5)*av);
+      }
+      playFirstImpact();
+    }
+
+    // ── Radical physics ──
+    if (radicalShards.length > 0) {
+      for (const s of radicalShards) {
+        if (s.phase === 'dormant') continue;
+        let timeScale = 1.0;
+        if (t >= 5.2 && t <= 6.8) {
+          timeScale = 0.35; // Slow motion during bounce
+        } else if (t >= 6.8) {
+          timeScale = 1.15; // Re-accelerate
+        }
+        stepRadicalPhysics(s, dt * timeScale, G);
+      }
+    }
+
+    // ── Camera during bounce & second fall ──
+    if (firstImpactDone) {
+      cam.shake = Math.max(0, cam.shake - cam.shakeDecay * dt);
+      if (t >= 5.2 && t < 6.8) {
+        cam.pos.y = lerp(cam.pos.y, 5.0, dt*1.5);
+        cam.pos.z = lerp(cam.pos.z, FRAMING.camStartZ - 4.5, dt*1.5);
+        cam.lookY = lerp(cam.lookY, 1.5, dt*2.0);
+      } else if (t >= 6.8 && t < 8.2) {
+        cam.pos.y = lerp(cam.pos.y, 6.2, dt*1.2);
+        cam.pos.z = lerp(cam.pos.z, FRAMING.camStartZ - 3.0, dt*1.2);
+        cam.lookY = lerp(cam.lookY, 1.2, dt*2.0);
+      }
+    }
+
+    // ── Phase: Binary Splash (8.2s) ──
+    if (t >= 8.2 && !binaryStarted) {
+      binaryStarted = true;
+      // Stagger bursts per shard for fluid overlap
+      radicalShards.forEach((s, idx) => {
+        const delay = idx * 0.07 + Math.random()*0.06;
+        setTimeout(() => {
+          if (finished) return;
+          const count = Math.floor(BIN_COUNT / radicalShards.length * (0.7 + Math.random()*0.6));
+          emitBinaryBurst(s.mesh.position.clone(), count, { power: 0.9 + Math.random()*0.5, up: 1.0 });
+          s.converted = true;
+          playBinarySplash();
+        }, delay * 1000);
+      });
+      cam.shake = Math.max(cam.shake, 0.18);
+    }
+
+    // ── Radical fade during binary phase ──
+    if (binaryStarted) {
+      for (const s of radicalShards) {
+        if (s.converted) {
+          s.mesh.material.opacity = lerp(s.mesh.material.opacity ?? 1, 0, dt*2.5);
+          s.mesh.material.transparent = true;
+          s.mesh.material.needsUpdate = true;
+          if ((s.mesh.material.opacity ?? 1) < 0.02) s.mesh.visible = false;
+        }
+      }
+    }
+
+    // ── Binary physics update ──
+    if (binaryStarted) {
+      binMat.userData.updateGlobalOpacity(1.0);
+      for (let i=0;i<BIN_COUNT;i++){
+        if (binState[i] !== 1) continue;
+        binLife[i] -= dt;
+        if (binLife[i] <= 0) {
+          binState[i] = 2;
+          _dummy.position.set(binPos[i*3], -200, binPos[i*3+2]);
+          _dummy.scale.setScalar(0.0001); _dummy.rotation.z = 0;
+          _dummy.updateMatrix();
+          binMesh.setMatrixAt(i, _dummy.matrix);
+          continue;
+        }
+        // Physics: gravity + drag + sink into ground
+        binVel[i*3+1] -= G * 1.5 * dt;
+        binVel[i*3+0] *= (1 - 0.9*dt);
+        binVel[i*3+2] *= (1 - 0.9*dt);
+        binPos[i*3+0] += binVel[i*3+0] * dt;
+        binPos[i*3+1] += binVel[i*3+1] * dt;
+        binPos[i*3+2] += binVel[i*3+2] * dt;
+        // Ground contact: slide + sink
+        if (binPos[i*3+1] < groundY + 0.02) {
+          binPos[i*3+1] = groundY + 0.02;
+          binVel[i*3+1] *= -0.18;
+          binVel[i*3+0] *= 0.7;
+          binVel[i*3+2] *= 0.7;
+          // Gradual sink into ground
+          if (binLife[i] < binLifeMax[i] * 0.5) {
+            binPos[i*3+1] -= dt * 0.15;
+          }
+        }
+        binRot[i] += binRotVel[i] * dt;
+        binRotVel[i] *= (1 - 0.6*dt);
+        const lifeFrac = binLife[i] / binLifeMax[i];
+        const scale = binScale[i] * smoothstep(0.0, 0.15, lifeFrac);
+        _dummy.position.set(binPos[i*3], binPos[i*3+1], binPos[i*3+2]);
+        _dummy.scale.setScalar(scale);
+        _dummy.rotation.set(0, 0, binRot[i]);
+        _dummy.updateMatrix();
+        binMesh.setMatrixAt(i, _dummy.matrix);
+      }
+      binMesh.instanceMatrix.needsUpdate = true;
+    }
+
+    // ── Phase: Fade out (9.5—12.0s) ──
+    if (t >= 9.5) {
+      const fp = (t - 9.5) / (12.0 - 9.5);
+      // Camera pullback
+      cam.pos.y = lerp(cam.pos.y, FRAMING.camStartY - 2.0, dt*0.8);
+      cam.pos.z = lerp(cam.pos.z, FRAMING.camStartZ + 3.0, dt*0.8);
+      cam.lookY = lerp(cam.lookY, 1.0, dt*1.0);
+      // Dim lights
+      ambient.intensity = lerp(ambient.intensity, 0.06, dt*0.6);
+      keyLight.intensity = lerp(keyLight.intensity, 0.08, dt*0.6);
+      groundRim.intensity = lerp(groundRim.intensity, 0.0, dt*0.6);
+      // Fade binary
+      const go = clamp(1 - fp*1.2, 0, 1);
+      binMat.userData.updateGlobalOpacity(go * 0.55);
+      dustMat.opacity = lerp(dustMat.opacity, 0.04, dt*0.6);
+      // Final light sweep near end
+      if (fp > 0.7 && fp < 0.82) {
+        keyLight.intensity = lerp(keyLight.intensity, 0.6, dt*8);
+      }
+      if (fp >= 1.0 && !finished) {
+        finished = true;
+        replayBtn.classList.remove('hidden');
+      }
+    }
+
+    // ── Camera shake application ──
+    if (cam.shake > 0.001) {
+      const s = cam.shake;
+      camera.position.x = cam.pos.x + (Math.random()-0.5)*s*0.35;
+      camera.position.y = cam.pos.y + (Math.random()-0.5)*s*0.35;
+      camera.position.z = cam.pos.z + (Math.random()-0.5)*s*0.2;
+    } else {
+      camera.position.copy(cam.pos);
+    }
+    camera.lookAt(0, cam.lookY, 0);
+    camera.updateProjectionMatrix();
+
+    // ── Render ──
+    if (composer) composer.render();
+    else renderer.render(scene, camera);
+  }
+  requestAnimationFrame(animate);
+
+  // ═══════════════════════════════════════════════════════════════════════
+  // 12. RESIZE HANDLER
+  // ═══════════════════════════════════════════════════════════════════════
+  function onResize() {
+    const w = window.innerWidth, h = window.innerHeight;
+    camera.aspect = w/h; camera.updateProjectionMatrix();
+    renderer.setSize(w, h);
+    renderer.setPixelRatio(PERF.dpr);
+    if (composer) { composer.setSize(w, h); }
+  }
+  window.addEventListener('resize', onResize);
+
+  // ═══════════════════════════════════════════════════════════════════════
+  // 13. EXPORT FOR DEBUGGING
+  // ═══════════════════════════════════════════════════════════════════════
+  window.__intro = { scene, camera, renderer, PERF, GLYPH_DATA, radicalShards, binMesh, replay,
+    xiangWhole, faWhole, ideaGroup, ground, groundMat, groundRim, ambient, keyLight, dustMat,
+    get firstImpactDone() { return firstImpactDone; },
+    get binaryStarted() { return binaryStarted; },
+    get finished() { return finished; },
+    get t0() { return t0; },
+    get groundY() { return groundY; },
+    get groundOpacity() { return groundOpacity; },
+    get cam() { return cam; },
+    get fall() { return fall; },
+    frameCount: 0,
+  };
+  console.log('[intro] Ready. Glyphs loaded:', Object.keys(GLYPH_DATA.glyphs).length);
+  </script>
+</body>
+</html>

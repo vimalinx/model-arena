@@ -1,0 +1,1273 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+<title>想法 → 信息 · Idea to Binary</title>
+<style>
+  :root { color-scheme: dark; }
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  html, body {
+    width: 100%; height: 100%; overflow: hidden;
+    background: #000; color: #d8dde3;
+    font-family: -apple-system, BlinkMacSystemFont, "SF Pro Display", "Inter", system-ui, sans-serif;
+    -webkit-font-smoothing: antialiased;
+  }
+  #app { position: fixed; inset: 0; }
+  canvas { display: block; }
+
+  /* vignette + grain overlay (pure CSS, cheap) */
+  #vignette {
+    position: fixed; inset: 0; pointer-events: none; z-index: 5;
+    background: radial-gradient(ellipse at 50% 45%,
+      rgba(0,0,0,0) 38%,
+      rgba(0,0,0,0.45) 78%,
+      rgba(0,0,0,0.86) 100%);
+  }
+  #grain {
+    position: fixed; inset: -50%; pointer-events: none; z-index: 6;
+    opacity: 0.045; mix-blend-mode: screen;
+    background-image:
+      radial-gradient(rgba(255,255,255,0.6) 0.5px, transparent 0.5px),
+      radial-gradient(rgba(255,255,255,0.35) 0.5px, transparent 0.5px);
+    background-size: 3px 3px, 7px 7px;
+    background-position: 0 0, 1px 2px;
+    animation: grainShift 0.6s steps(2) infinite;
+  }
+  @keyframes grainShift {
+    0%   { transform: translate(0,0); }
+    50%  { transform: translate(-2%, 1%); }
+    100% { transform: translate(1%, -1%); }
+  }
+
+  /* replay button */
+  #replay {
+    position: fixed; right: 22px; bottom: 18px; z-index: 20;
+    padding: 8px 14px;
+    color: #cfd6df;
+    background: rgba(20,22,26,0.45);
+    border: 1px solid rgba(255,255,255,0.16);
+    border-radius: 999px;
+    font-size: 12px; letter-spacing: 0.18em; text-transform: uppercase;
+    cursor: pointer;
+    opacity: 0.22;
+    transition: opacity .35s ease, background .35s ease, border-color .35s ease;
+    backdrop-filter: blur(6px);
+    -webkit-backdrop-filter: blur(6px);
+    user-select: none;
+  }
+  #replay:hover { opacity: 1; background: rgba(40,46,54,0.6); border-color: rgba(255,255,255,0.32); }
+  #replay.hidden { opacity: 0; pointer-events: none; }
+
+  /* loading / fallback */
+  #boot {
+    position: fixed; inset: 0; z-index: 30;
+    display: flex; align-items: center; justify-content: center;
+    background: #000; color: #6b7280; font-size: 12px; letter-spacing: 0.3em;
+  }
+  #boot.gone { opacity: 0; pointer-events: none; transition: opacity .8s ease; }
+  #boot.fail { color: #b85; }
+</style>
+</head>
+<body>
+  <div id="app"></div>
+  <div id="vignette"></div>
+  <div id="grain"></div>
+  <button id="replay" class="hidden" aria-label="Replay">↻ Replay</button>
+  <div id="boot">LOADING</div>
+
+  <script type="importmap">
+  {
+    "imports": {
+      "three": "https://unpkg.com/three@0.185.1/build/three.module.js",
+      "three/addons/": "https://unpkg.com/three@0.185.1/examples/jsm/"
+    }
+  }
+  </script>
+
+  <script type="module">
+  import * as THREE from 'three';
+  import { EffectComposer } from 'three/addons/postprocessing/EffectComposer.js';
+  import { RenderPass } from 'three/addons/postprocessing/RenderPass.js';
+  import { UnrealBloomPass } from 'three/addons/postprocessing/UnrealBloomPass.js';
+  import { ShaderPass } from 'three/addons/postprocessing/ShaderPass.js';
+  import { FXAAShader } from 'three/addons/shaders/FXAAShader.js';
+
+  /* =========================================================================
+   * GLM-5.2 (OMP) · idea-to-binary-intro suite
+   * 想法 → 偏旁与笔画 → 二进制数据
+   * Single-file Three.js + custom orchestration + instanced binary splash.
+   * ========================================================================= */
+
+  // ---- embedded glyph data (Noto Sans CJK SC Bold, subset) ----
+  const GLYPH_DATA = {"unitsPerEm":1000,"glyphs":{"\u60f3":{"path":"M261 206V69C261 -36 296 -69 432 -69C460 -69 585 -69 614 -69C724 -69 757 -34 772 109C739 116 689 133 664 152C658 51 651 37 605 37C572 37 469 37 444 37C389 37 380 41 380 70V206ZM743 192C783 126 839 37 863 -17L975 41C947 93 889 178 848 240ZM118 227C100 156 67 74 30 20L140 -34C175 24 205 114 225 185ZM617 559H802V500H617ZM617 412H802V352H617ZM617 705H802V647H617ZM508 799V267L488 285L406 219C450 177 510 116 538 79L625 153C601 182 556 223 517 259H917V799ZM213 848V707H48V605H195C154 517 89 431 23 382C47 362 83 324 100 298C140 334 179 385 213 442V247H327V455C363 423 401 387 423 362L486 458C461 477 365 546 327 568V605H468V707H327V848Z","width":1000},"\u6cd5":{"path":"M94 751C158 721 242 673 280 638L350 737C308 770 223 814 160 839ZM35 481C99 453 183 407 222 373L289 473C246 506 161 548 98 571ZM70 3 172 -78C232 20 295 134 348 239L260 319C200 203 123 78 70 3ZM399 -66C433 -50 484 -41 819 0C835 -32 847 -63 855 -89L962 -35C935 47 863 163 795 250L698 203C721 171 744 136 765 100L529 75C579 151 629 242 670 333H942V446H701V587H906V701H701V850H579V701H381V587H579V446H340V333H529C489 234 441 146 423 119C399 82 381 60 357 54C372 20 393 -40 399 -66Z","width":1000},"\u6728":{"path":"M436 849V616H61V497H384C302 339 164 188 15 107C43 83 84 35 105 5C234 85 348 212 436 359V-90H564V364C653 218 768 90 894 9C914 42 955 89 984 113C838 193 696 343 612 497H941V616H564V849Z","width":1000},"\u76ee":{"path":"M262 450H726V332H262ZM262 564V678H726V564ZM262 218H726V101H262ZM141 795V-79H262V-16H726V-79H854V795Z","width":1000},"\u5fc3":{"path":"M294 563V98C294 -30 331 -70 461 -70C487 -70 601 -70 629 -70C752 -70 785 -10 799 180C766 188 714 210 686 231C679 74 670 42 619 42C593 42 499 42 476 42C428 42 420 49 420 98V563ZM113 505C101 370 72 220 36 114L158 64C192 178 217 352 231 482ZM737 491C790 373 841 214 857 112L979 162C958 266 906 418 849 537ZM329 753C422 690 546 594 601 532L689 626C629 688 502 777 410 834Z","width":1000},"\u6c35":{"path":"M115 747C178 709 270 651 312 615L390 713C344 747 250 801 189 834ZM28 480C96 443 196 387 243 352L316 453C266 488 164 539 97 570ZM90 6 191 -96C270 6 351 122 421 230L336 328C256 208 158 81 90 6Z","width":1000},"\u53bb":{"path":"M139 -64C191 -45 260 -42 766 -2C784 -32 798 -61 809 -85L927 -25C882 66 790 200 702 300L592 251C627 208 664 157 698 107L294 83C359 154 424 240 480 328H959V449H563V591H887V712H563V850H436V712H122V591H436V449H45V328H327C271 229 201 139 175 114C145 81 124 60 99 54C113 21 133 -40 139 -64Z","width":1000},"I":{"path":"M91 0H239V741H91Z","width":330},"D":{"path":"M91 0H302C521 0 660 124 660 374C660 623 521 741 294 741H91ZM239 120V622H284C423 622 509 554 509 374C509 194 423 120 284 120Z","width":714},"E":{"path":"M91 0H556V124H239V322H498V446H239V617H545V741H91Z","width":615},"A":{"path":"M-4 0H146L198 190H437L489 0H645L408 741H233ZM230 305 252 386C274 463 295 547 315 628H319C341 549 361 463 384 386L406 305Z","width":641},"0":{"path":"M295 -14C446 -14 546 118 546 374C546 628 446 754 295 754C144 754 44 629 44 374C44 118 144 -14 295 -14ZM295 101C231 101 183 165 183 374C183 580 231 641 295 641C359 641 406 580 406 374C406 165 359 101 295 101Z","width":590},"1":{"path":"M82 0H527V120H388V741H279C232 711 182 692 107 679V587H242V120H82Z","width":590}}};
+
+  // =============================================================================
+  // 1. PERF PROFILE
+  // =============================================================================
+  const PERF = detectPerf();
+  function detectPerf() {
+    const cores = navigator.hardwareConcurrency || 4;
+    const mem = navigator.deviceMemory || 4;
+    const w = window.innerWidth;
+    const mobile = /Mobi|Android|iPhone|iPad/.test(navigator.userAgent) || w < 760;
+    let tier = 2;
+    if (mobile || cores <= 4 || mem <= 4) tier = 0;
+    else if (cores <= 8) tier = 1;
+    return {
+      tier,                                   // 0 low, 1 mid, 2 high
+      mobile,
+      dpr: Math.min(window.devicePixelRatio || 1, tier === 0 ? 1.25 : tier === 1 ? 1.75 : 2),
+      bloom: tier >= 1,
+      bloomStrength: tier === 0 ? 0.0 : tier === 1 ? 0.35 : 0.55,
+      shadowMap: tier >= 1,
+      shadowSize: tier === 0 ? 512 : tier === 1 ? 1024 : 2048,
+      binaryCount: tier === 0 ? 900 : tier === 1 ? 2000 : 3600,
+      dustCount: tier === 0 ? 180 : tier === 1 ? 480 : 900,
+      motionBlur: tier >= 2,                  // simulated via trail opacity
+      motionBlurStrength: tier === 2 ? 0.55 : 0,
+    };
+  }
+
+  // =============================================================================
+  // 2. SVG PATH → THREE.Shape  (subset of SVG path grammar, sufficient for CFF)
+  // =============================================================================
+  function svgPathToShapes(d) {
+    // returns array of THREE.Shape (with holes tracked)
+    const cmds = parsePath(d);
+    // group subpaths; each closed subpath is a potential contour.
+    const contours = [];
+    let cur = null;
+    for (const c of cmds) {
+      if (c.t === 'M') { cur = []; contours.push(cur); cur.push([c.x, c.y]); }
+      else if (c.t === 'L') { cur.push([c.x, c.y]); }
+      else if (c.t === 'C') { cur.push([c.x1, c.y1, c.x2, c.y2, c.x, c.y]); }
+      else if (c.t === 'Q') { cur.push([c.x1, c.y1, c.x, c.y]); }
+      else if (c.t === 'Z') { /* close flag handled at build */ }
+    }
+    // build THREE.Shape from each contour, then decide holes by signed area.
+    const shapes = [];
+    const polys = contours.map(poly => {
+      // flatten into THREE.Shape-compatible points; keep control pts for bezier
+      const shape = new THREE.Shape();
+      let i = 0;
+      let started = false;
+      while (i < poly.length) {
+        const p = poly[i];
+        if (p.length === 2) {
+          if (!started) { shape.moveTo(p[0], p[1]); started = true; }
+          else shape.lineTo(p[0], p[1]);
+          i++;
+        } else if (p.length === 4) { // quadratic
+          if (!started) { shape.moveTo(p[0], p[1]); started = true; }
+          shape.quadraticCurveTo(p[2], p[3], p[0], p[1]); // degenerate; handled below
+          i++;
+        } else if (p.length === 6) { // cubic
+          if (!started) { shape.moveTo(p[0], p[1]); started = true; }
+          shape.bezierCurveTo(p[2], p[3], p[4], p[5], p[0], p[1]);
+          i++;
+        } else { i++; }
+      }
+      shape.closePath();
+      return { shape, area: signedArea(poly) };
+    });
+    // hole detection: a contour is a hole if winding differs from its containing outer.
+    polys.sort((a, b) => Math.abs(b.area) - Math.abs(a.area));
+    for (let i = 0; i < polys.length; i++) {
+      const p = polys[i];
+      let parent = -1;
+      for (let j = 0; j < i; j++) {
+        if (containsBBox(polys[j].shape, p.shape)) { parent = j; break; }
+      }
+      if (parent === -1 || sameSign(polys[parent].area, p.area) === false) {
+        // outer of its own group (no parent) OR opposite winding of parent → treat appropriately
+        if (parent === -1) shapes.push(p.shape);
+        else polys[parent].shape.holes.push(p.shape);
+      } else {
+        // same winding as parent with a parent → still an outer, but rare for CFF
+        shapes.push(p.shape);
+      }
+    }
+    return shapes;
+  }
+  function sameSign(a, b) { return (a < 0) === (b < 0); }
+  function containsBBox(outer, inner) {
+    // simple bbox containment test
+    const ob = outer.getBoundingBox ? null : null;
+    // THREE.Shape has no getBoundingBox; compute manually from points
+    const obb = bboxOf(outer.getPoints(8));
+    const ibb = bboxOf(inner.getPoints(8));
+    return ibb.minX >= obb.minX && ibb.maxX <= obb.maxX && ibb.minY >= obb.minY && ibb.maxY <= obb.maxY;
+  }
+  function bboxOf(pts) {
+    let minX=Infinity,minY=Infinity,maxX=-Infinity,maxY=-Infinity;
+    for (const p of pts) { if(p.x<minX)minX=p.x; if(p.y<minY)minY=p.y; if(p.x>maxX)maxX=p.x; if(p.y>maxY)maxY=p.y; }
+    return {minX,minY,maxX,maxY};
+  }
+  function signedArea(poly) {
+    // shoelace over anchor points (ignoring bezier control pts)
+    let a = 0;
+    let prev = null;
+    for (const p of poly) {
+      const x = p[0], y = p[1];
+      if (prev) a += (prev[0]*y - x*prev[1]);
+      prev = [x, y];
+    }
+    if (prev) a += (prev[0]*poly[0][1] - poly[0][0]*prev[1]);
+    return a * 0.5;
+  }
+  function parsePath(d) {
+    // tokenize into command list with absolute coords
+    const cmdRe = /([MmLlCcQqZzHhVvSsTtAa])([^MmLlCcQqZzHhVvSsTtAa]*)/g;
+    const cmds = [];
+    let m; let cur = {x:0,y:0}; let start = {x:0,y:0};
+    const numRe = /-?(?:\d+\.\d+|\.\d+|\d+)(?:e[-+]?\d+)?/gi;
+    const nums = s => { const a=[]; let m2; numRe.lastIndex=0; while((m2=numRe.exec(s))) a.push(parseFloat(m2[0])); return a; };
+    while ((m = cmdRe.exec(d))) {
+      const cmd = m[1]; const args = nums(m[2]);
+      const rel = cmd === cmd.toLowerCase();
+      const C = cmd.toUpperCase();
+      const pop = () => args.shift();
+      switch (C) {
+        case 'M': {
+          let x = pop(), y = pop();
+          if (rel) { x += cur.x; y += cur.y; }
+          cur = {x, y}; start = {x, y};
+          cmds.push({t:'M', x, y});
+          while (args.length) { let lx=pop(), ly=pop(); if(rel){lx+=cur.x;ly+=cur.y;} cur={x:lx,y:ly}; cmds.push({t:'L',x:lx,y:ly}); }
+          break;
+        }
+        case 'L': { while(args.length){ let x=pop(),y=pop(); if(rel){x+=cur.x;y+=cur.y;} cur={x,y}; cmds.push({t:'L',x,y}); } break; }
+        case 'H': { while(args.length){ let x=pop(); if(rel)x+=cur.x; cur={x,y:cur.y}; cmds.push({t:'L',x,y:cur.y}); } break; }
+        case 'V': { while(args.length){ let y=pop(); if(rel)y+=cur.y; cur={x:cur.x,y}; cmds.push({t:'L',x:cur.x,y}); } break; }
+        case 'C': { while(args.length>=6){ let x1=pop(),y1=pop(),x2=pop(),y2=pop(),x=pop(),y=pop(); if(rel){x1+=cur.x;y1+=cur.y;x2+=cur.x;y2+=cur.y;x+=cur.x;y+=cur.y;} cur={x,y}; cmds.push({t:'C',x1,y1,x2,y2,x,y}); } break; }
+        case 'S': { while(args.length>=4){ let x2=pop(),y2=pop(),x=pop(),y=pop(); if(rel){x2+=cur.x;y2+=cur.y;x+=cur.x;y+=cur.y;} const x1=cur.x, y1=cur.y; cur={x,y}; cmds.push({t:'C',x1,y1,x2,y2,x,y}); } break; }
+        case 'Q': { while(args.length>=4){ let x1=pop(),y1=pop(),x=pop(),y=pop(); if(rel){x1+=cur.x;y1+=cur.y;x+=cur.x;y+=cur.y;} cur={x,y}; cmds.push({t:'Q',x1,y1,x,y}); } break; }
+        case 'T': { while(args.length>=2){ let x=pop(),y=pop(); if(rel){x+=cur.x;y+=cur.y;} const x1=cur.x,y1=cur.y; cur={x,y}; cmds.push({t:'Q',x1,y1,x,y}); } break; }
+        case 'Z': { cmds.push({t:'Z'}); cur={x:start.x,y:start.y}; break; }
+        case 'A': { // approximate arc as line (CJK glyphs rarely use arcs)
+          while(args.length>=7){ pop();pop();pop();pop();pop(); let x=pop(),y=pop(); if(rel){x+=cur.x;y+=cur.y;} cur={x,y}; cmds.push({t:'L',x,y}); } break; }
+      }
+    }
+    return cmds;
+  }
+
+  // CFF glyphs have y-axis pointing UP in our data (font-space).
+  // ExtrudeGeometry expects shapes in XY. We'll flip y so glyphs read upright in XY plane,
+  // then we orient the mesh so the extrude depth points along +Z (toward camera).
+
+  function buildExtrudedGlyph(charData, opts = {}) {
+    // Build geometry in WORLD units directly (not font units), so depth and bevel
+    // are not destroyed by a later uniform scale.
+    const scale = opts.scale ?? 1.0 / 1000; // em→world
+    const depth = opts.depth ?? 0.45;        // world units (post-scale)
+    const bevelSizeWorld = (opts.bevel?.size ?? 0.012);
+    const bevelThickWorld = (opts.bevel?.thickness ?? 0.012);
+    // scale the shape coordinates into world units first
+    const shapes = svgPathToShapes(charData.path).map(s => {
+      const ns = new THREE.Shape();
+      const pts = s.getPoints(8);
+      if (pts.length) ns.moveTo(pts[0].x*scale, pts[0].y*scale);
+      for (let i=1;i<pts.length;i++) ns.lineTo(pts[i].x*scale, pts[i].y*scale);
+      ns.closePath();
+      // scale holes too
+      for (const h of (s.holes||[])) {
+        const nh = new THREE.Path();
+        const hp = h.getPoints(8);
+        if (hp.length) nh.moveTo(hp[0].x*scale, hp[0].y*scale);
+        for (let i=1;i<hp.length;i++) nh.lineTo(hp[i].x*scale, hp[i].y*scale);
+        nh.closePath();
+        ns.holes.push(nh);
+      }
+      return ns;
+    });
+    const geo = new THREE.ExtrudeGeometry(shapes, {
+      depth,
+      bevelEnabled: !(opts.bevel === false),
+      bevelThickness: bevelThickWorld,
+      bevelSize: bevelSizeWorld,
+      bevelSegments: opts.bevel?.segments ?? 1,
+      steps: 1,
+      curveSegments: opts.curveSegments ?? 8,
+    });
+    // center horizontally on glyph width (now in world units)
+    geo.translate(-(charData.width/2)*scale, 0, 0);
+    geo.computeVertexNormals();
+    return geo;
+  }
+
+  console.log('[intro] perf tier', PERF);
+  window.__PERF = PERF;
+
+  // =============================================================================
+  // 3. SCENE / RENDERER
+  // =============================================================================
+  const app = document.getElementById('app');
+  const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: false, powerPreference: 'high-performance', preserveDrawingBuffer: true });
+  renderer.setPixelRatio(PERF.dpr);
+  renderer.setSize(window.innerWidth, window.innerHeight);
+  renderer.setClearColor(0x000000, 1);
+  renderer.outputColorSpace = THREE.SRGBColorSpace;
+  renderer.toneMapping = THREE.ACESFilmicToneMapping;
+  renderer.toneMappingExposure = 1.05;
+  if (PERF.shadowMap) { renderer.shadowMap.enabled = true; renderer.shadowMap.type = THREE.PCFSoftShadowMap; }
+  app.appendChild(renderer.domElement);
+
+  const scene = new THREE.Scene();
+  scene.background = new THREE.Color(0x000000);
+  scene.fog = new THREE.FogExp2(0x000000, 0.018);
+
+  const camera = new THREE.PerspectiveCamera(46, window.innerWidth/window.innerHeight, 0.1, 200);
+  // mobile framing: pull back a bit
+  const FRAMING = PERF.mobile
+    ? { camStartY: 17.5, camStartZ: 21, camLookY: 13 }
+    : { camStartY: 15.5, camStartZ: 17.5, camLookY: 13 };
+  camera.position.set(0, FRAMING.camStartY, FRAMING.camStartZ);
+  camera.lookAt(0, FRAMING.camLookY, 0);
+
+  // Lights — restrained sculptural setup
+  const ambient = new THREE.AmbientLight(0x6e6a64, 0.85);
+  scene.add(ambient);
+
+  // key rim light from upper-left (neutral white, NOT cool — blue reserved for binary phase)
+  const key = new THREE.DirectionalLight(0xf6f3ee, 2.6);
+  key.position.set(-6, 22, 8);
+  key.intensity = 2.4;
+  scene.add(key);
+
+  // subtle fill from lower right (warm-neutral)
+  const fill = new THREE.DirectionalLight(0x6a6258, 0.65);
+  fill.position.set(7, 4, 6);
+  scene.add(fill);
+
+  // ground contour light (low-angle), color near-black with cool tint
+  const groundRim = new THREE.SpotLight(0x9fb4c8, 0.0, 60, Math.PI/4, 0.7, 1.2);
+  groundRim.position.set(0, 2.2, 14);
+  groundRim.target.position.set(0, 0, 0);
+  scene.add(groundRim); scene.add(groundRim.target);
+
+  if (PERF.shadowMap) { key.castShadow = true; key.shadow.mapSize.set(PERF.shadowSize, PERF.shadowSize); key.shadow.camera.left=-12; key.shadow.camera.right=12; key.shadow.camera.top=18; key.shadow.camera.bottom=-4; key.shadow.camera.near=1; key.shadow.camera.far=60; key.shadow.bias = -0.0008; }
+
+  // ---- Ground (rises in) ----
+  const groundGeo = new THREE.PlaneGeometry(80, 80, 1, 1);
+  const groundMat = new THREE.MeshStandardMaterial({
+    color: 0x050608, metalness: 0.35, roughness: 0.62,
+    transparent: true, opacity: 0.0,
+  });
+  const ground = new THREE.Mesh(groundGeo, groundMat);
+  ground.rotation.x = -Math.PI/2;
+  ground.position.y = -6.0;
+  ground.receiveShadow = !!PERF.shadowMap;
+  scene.add(ground);
+
+  // faint procedural ground texture (scanline data texture, very subtle)
+  {
+    const c = document.createElement('canvas'); c.width = c.height = 256;
+    const g = c.getContext('2d');
+    g.fillStyle = '#05060a'; g.fillRect(0,0,256,256);
+    for (let i=0;i<2600;i++){ g.fillStyle = `rgba(120,140,160,${Math.random()*0.05})`; g.fillRect(Math.random()*256, Math.random()*256, 1, 1); }
+    const tex = new THREE.CanvasTexture(c);
+    tex.wrapS = tex.wrapT = THREE.RepeatWrapping; tex.repeat.set(6,6);
+    groundMat.map = tex; groundMat.needsUpdate = true;
+  }
+
+  // ---- Dust (floating motes) ----
+  const dustGeo = new THREE.BufferGeometry();
+  const dustPos = new Float32Array(PERF.dustCount * 3);
+  const dustVel = new Float32Array(PERF.dustCount * 3);
+  for (let i=0;i<PERF.dustCount;i++){
+    dustPos[i*3+0] = (Math.random()-0.5)*40;
+    dustPos[i*3+1] = Math.random()*30 - 4;
+    dustPos[i*3+2] = (Math.random()-0.5)*20 - 4;
+    dustVel[i*3+0] = (Math.random()-0.5)*0.02;
+    dustVel[i*3+1] = (Math.random()-0.5)*0.015;
+    dustVel[i*3+2] = (Math.random()-0.5)*0.02;
+  }
+  dustGeo.setAttribute('position', new THREE.BufferAttribute(dustPos, 3));
+  const dustMat = new THREE.PointsMaterial({ color: 0x9aa6b4, size: 0.03, sizeAttenuation: true, transparent: true, opacity: 0.5, depthWrite: false });
+  const dust = new THREE.Points(dustGeo, dustMat);
+  scene.add(dust);
+
+  // =============================================================================
+  // 4. GLYPHS (想法 + radicals + IDEA)
+  // =============================================================================
+  // shared sculpted-stone material for the heavy Chinese characters
+  const stoneMat = new THREE.MeshStandardMaterial({
+    color: 0xeae8e4, metalness: 0.06, roughness: 0.62,
+    emissive: 0x16140f, emissiveIntensity: 0.45,
+  });
+  const stoneMatHeavy = stoneMat.clone(); stoneMatHeavy.color.set(0xe6e4df); stoneMatHeavy.roughness = 0.58;
+  const ideaEngMat = new THREE.MeshStandardMaterial({ color: 0xaaa6a0, metalness:0.05, roughness:0.7, transparent:true, opacity:0.62, emissive:0x0e0c08, emissiveIntensity:0.35 });
+
+  // build whole glyphs for the opening (we'll replace with radical shards at impact)
+  const FONT_DEPTH = 1.1;      // world units of extrude depth (real thickness)
+  const FONT_SCALE = 6.8;      // glyph world height (em ≈1.0 → 6.8 world units tall)
+  const glyphUnitsToWorld = (FONT_SCALE) / 1000; // 1 em = 1000 units
+
+  function makeGlyphMesh(charData, material, opts={}) {
+    const geo = buildExtrudedGlyph(charData, {
+      depth: opts.depth ?? FONT_DEPTH,
+      scale: glyphUnitsToWorld,
+      bevel: { thickness: 0.014, size: 0.014, segments: 1 },
+      curveSegments: PERF.tier === 0 ? 4 : 8,
+    });
+    const m = new THREE.Mesh(geo, material);
+    m.castShadow = !!PERF.shadowMap; m.receiveShadow = !!PERF.shadowMap;
+    // center vertically: compute bbox
+    geo.computeBoundingBox();
+    const bb = geo.boundingBox;
+    m.userData.bbox = bb;
+    return m;
+  }
+
+  // positions for 想法 in the opening
+  // 想 sits slightly left & lower (it's the heavier one); 法 slightly right & higher.
+  // For the static intro we show them as a readable pair centered.
+  const XIANG_X = -3.75;   // 想中心
+  const FA_X    =  3.75;   // 法中心
+  const PAIR_Y  = 14.5;    // floating height
+  const PAIR_Z  = 0.0;
+
+  const xiangWhole = makeGlyphMesh(GLYPH_DATA.glyphs['想'], stoneMatHeavy);
+  xiangWhole.position.set(XIANG_X, PAIR_Y, PAIR_Z);
+  xiangWhole.userData.kind = 'whole-xiang';
+  scene.add(xiangWhole);
+
+  const faWhole = makeGlyphMesh(GLYPH_DATA.glyphs['法'], stoneMat);
+  faWhole.position.set(FA_X, PAIR_Y + 0.05, PAIR_Z);
+  faWhole.userData.kind = 'whole-fa';
+  scene.add(faWhole);
+
+  // IDEA letters below (small, wide-tracked)
+  const ideaGroup = new THREE.Group();
+  const LETTERS = ['I','D','E','A'];
+  const letterSpacing = 1.35;
+  const ideaStartX = -((LETTERS.length-1)*letterSpacing)/2;
+  LETTERS.forEach((L, i) => {
+    const m = makeGlyphMesh(GLYPH_DATA.glyphs[L], ideaEngMat, { depth: 0.18, scale: glyphUnitsToWorld * 0.62 });
+    // letters need different centering because widths differ
+    m.geometry.computeBoundingBox();
+    const w = (m.geometry.boundingBox.max.x - m.geometry.boundingBox.min.x);
+    m.position.set(ideaStartX + i*letterSpacing - w/2, PAIR_Y - 5.8, 0.0);
+    ideaGroup.add(m);
+  });
+  scene.add(ideaGroup);
+
+  // ---- Radical shard definitions ----
+  // We pre-split into independent objects. Each shard has:
+  //   glyph char, homePosition (x,y,z) in the full 想法 composition,
+  //   mass (relative), impactDelay (s after first impact), dispersion velocity hint.
+  // Composition layout (rough) — overlay radicals so their union reads as 想法:
+  //   想 occupies left column; decomposed into 木 (top), 目 (mid), 心 (bottom).
+  //   法 occupies right column; decomposed into 氵 (left of 法) and 去 (right of 法).
+  //
+  // Coordinates in world space; we'll compute approximate placements relative to whole-glyph bboxes.
+
+  function approxGlyphWorldBBox(mesh) {
+    const bb = mesh.userData.bbox; // local
+    return {
+      minX: bb.min.x + mesh.position.x, maxX: bb.max.x + mesh.position.x,
+      minY: bb.min.y + mesh.position.y, maxY: bb.max.y + mesh.position.y,
+      minZ: bb.min.z + mesh.position.z, maxZ: bb.max.z + mesh.position.z,
+    };
+  }
+  // Defer shard build until after first impact (so we know exact whole-glyph positions at impact).
+
+  let radicalShards = []; // { mesh, mass, angVel, vel, ... }
+  function buildRadicalShards(impactXiangPos, impactFaPos) {
+    // build shard meshes for 想拆为 木/目/心 and 法拆为 氵/去
+    const cfg = [
+      // 想拆分: 木 (top), 目 (middle), 心 (bottom). 各自子字形。
+      { ch:'木', parent:'想', fracY:[0.66, 1.0], mass:1.5, size:1.0 },
+      { ch:'目', parent:'想', fracY:[0.33, 0.66], mass:1.2, size:1.0 },
+      { ch:'心', parent:'想', fracY:[0.0,  0.33], mass:1.4, size:1.0 },
+      // 法拆分: 氵 (left), 去 (right)
+      { ch:'氵', parent:'法', fracX:[0.0, 0.32], mass:0.8, size:1.0 },
+      { ch:'去', parent:'法', fracX:[0.32, 1.0], mass:1.0, size:1.0 },
+    ];
+    const out = [];
+    for (const c of cfg) {
+      const mat = (c.parent === '想') ? stoneMatHeavy.clone() : stoneMat.clone();
+      const m = makeGlyphMesh(GLYPH_DATA.glyphs[c.ch], mat);
+      // position at the appropriate slice of the parent glyph
+      const pb = (c.parent === '想') ? approxGlyphWorldBBox(xiangWhole) : approxGlyphWorldBBox(faWhole);
+      const cx = (pb.minX + pb.maxX)/2;
+      // vertical placement
+      let cy = (pb.minY + pb.maxY)/2;
+      if (c.fracY) {
+        const y0 = pb.minY + (pb.maxY-pb.minY)*c.fracY[0];
+        const y1 = pb.minY + (pb.maxY-pb.minY)*c.fracY[1];
+        cy = (y0+y1)/2;
+      }
+      let cxAdj = cx;
+      if (c.fracX) {
+        const x0 = pb.minX + (pb.maxX-pb.minX)*c.fracX[0];
+        const x1 = pb.minX + (pb.maxX-pb.minX)*c.fracX[1];
+        cxAdj = (x0+x1)/2;
+      }
+      m.position.set(cxAdj, cy, PAIR_Z);
+      m.visible = false;
+      scene.add(m);
+      out.push({
+        mesh: m, mass: c.mass, parent: c.parent, ch: c.ch,
+        // physics state set at impact time
+        vel: new THREE.Vector3(), angVel: new THREE.Vector3(),
+        // flag for whether it has been released into second-fall
+        phase: 'dormant',
+        // which impact this shard belongs to (timing offsets)
+        impactOffset: (Math.random()*0.18) + (c.parent === '想' ? 0 : 0.06),
+      });
+    }
+    return out;
+  }
+
+  // =============================================================================
+  // 5. BINARY SPLASH (instanced)
+  // =============================================================================
+  // Pre-build a pool of N instanced digit sprites. Use a single geometry (plane)
+  // with a material that picks '0' or '1' from a texture atlas.
+  // For "real thickness" we use small extruded digits? Too expensive. Use SDF-like
+  // sprite sheets with subtle bloom; thickness implied by slight scale + dark edge.
+  // → Use THREE.InstancedMesh with a PlaneGeometry + ShaderMaterial sampling a canvas atlas.
+
+  const BIN_COUNT = PERF.binaryCount;
+  const binAtlas = makeDigitAtlas();
+  function makeDigitAtlas() {
+    const c = document.createElement('canvas'); c.width = 128; c.height = 64;
+    const g = c.getContext('2d');
+    g.fillStyle = 'rgba(0,0,0,0)'; g.fillRect(0,0,128,64);
+    g.fillStyle = '#9fd8ff';
+    g.font = 'bold 56px "SF Pro Display", Arial, sans-serif';
+    g.textBaseline = 'middle'; g.textAlign = 'center';
+    g.fillText('0', 32, 34);
+    g.fillText('1', 96, 34);
+    const tex = new THREE.CanvasTexture(c);
+    tex.colorSpace = THREE.SRGBColorSpace;
+    return tex;
+  }
+
+  const binGeo = new THREE.PlaneGeometry(0.18, 0.18);
+  // Proper ShaderMaterial for instanced per-instance uv-offset + scale.
+  // Instanced attributes go on the geometry; THREE injects instanceMatrix automatically.
+  const binMat = new THREE.ShaderMaterial({
+    uniforms: {
+      uMap: { value: binAtlas },
+      uGlobalOpacity: { value: 0.0 },
+      uFogColor: { value: new THREE.Color(0x000000) },
+      uFogNear: { value: 6.0 },
+      uFogFar: { value: 52.0 },
+    },
+    vertexShader: `
+      attribute vec2 aUvOffset;
+      attribute float aScale;
+      varying vec2 vUv;
+      varying float vViewDepth;
+      void main() {
+        vUv = uv * 0.5 + aUvOffset;
+        vec3 scaled = position * aScale;
+        vec4 mv = modelViewMatrix * instanceMatrix * vec4(scaled, 1.0);
+        vViewDepth = -mv.z;
+        gl_Position = projectionMatrix * mv;
+      }
+    `,
+    fragmentShader: `
+      uniform sampler2D uMap;
+      uniform float uGlobalOpacity;
+      uniform vec3 uFogColor;
+      uniform float uFogNear;
+      uniform float uFogFar;
+      varying vec2 vUv;
+      varying float vViewDepth;
+      void main() {
+        vec4 t = texture2D(uMap, vUv);
+        float a = t.a * uGlobalOpacity;
+        a *= clamp(1.0 - (vViewDepth - uFogNear) / (uFogFar - uFogNear), 0.0, 1.0);
+        if (a < 0.01) discard;
+        gl_FragColor = vec4(t.rgb * a, a);
+      }
+    `,
+    transparent: true,
+    depthWrite: false,
+    blending: THREE.AdditiveBlending,
+  });
+  binMat.userData.updateGlobalOpacity = (v) => {
+    binMat.uniforms.uGlobalOpacity.value = v;
+  };
+  // Per-instance state arrays
+  const binUvOffset = new Float32Array(BIN_COUNT * 2);
+  const binLifeMax  = new Float32Array(BIN_COUNT);
+  const binLife     = new Float32Array(BIN_COUNT);
+  const binState    = new Uint8Array(BIN_COUNT);   // 0 idle, 1 active, 2 dead
+  const binPos      = new Float32Array(BIN_COUNT * 3);
+  const binVel      = new Float32Array(BIN_COUNT * 3);
+  const binScale    = new Float32Array(BIN_COUNT);
+  const binRot      = new Float32Array(BIN_COUNT);
+  const binRotVel   = new Float32Array(BIN_COUNT);
+  for (let i=0;i<BIN_COUNT;i++){
+    binUvOffset[i*2+0] = (Math.random()<0.5)?0.0:0.5;  // 0 or 1
+    binUvOffset[i*2+1] = 0.0;
+    binState[i] = 0;
+    binLifeMax[i] = 1.2 + Math.random()*1.6;
+    binLife[i] = 0;
+    binScale[i] = 0.6 + Math.random()*0.9;
+  }
+  binGeo.setAttribute('aUvOffset', new THREE.InstancedBufferAttribute(binUvOffset, 2));
+  binGeo.setAttribute('aScale', new THREE.InstancedBufferAttribute(binScale, 1));
+
+  const binMesh = new THREE.InstancedMesh(binGeo, binMat, BIN_COUNT);
+  binMesh.instanceMatrix.setUsage(THREE.DynamicDrawUsage);
+  binMesh.frustumCulled = false;
+  binMesh.count = BIN_COUNT;
+  // initial: all hidden (scaled to 0)
+  const _dummy = new THREE.Object3D();
+  for (let i=0;i<BIN_COUNT;i++){
+    _dummy.position.set(0,-100,0); _dummy.scale.setScalar(0.0001); _dummy.updateMatrix();
+    binMesh.setMatrixAt(i, _dummy.matrix);
+  }
+  binMesh.instanceMatrix.needsUpdate = true;
+  scene.add(binMesh);
+
+  // particle emitter: spawn N digits from a world point with splash velocities
+  let binCursor = 0;
+  function emitBinaryBurst(origin, count, opts={}) {
+    const power = opts.power ?? 1.0;
+    const baseUp = opts.up ?? 1.0;
+    let spawned = 0;
+    for (let s=0; s<count; s++) {
+      const i = binCursor; binCursor = (binCursor+1) % BIN_COUNT;
+      if (binState[i] !== 0 && binLife[i] > 0) continue; // skip if still alive (rare)
+      // splash kinematics: random direction biased upward, parabolic
+      const ang = (Math.random()-0.5) * Math.PI * 0.9;       // -81°..+81° from vertical
+      const speed = (3.5 + Math.random()*5.5) * power;
+      const dirX = Math.sin(ang) * (origin.x > 0 ? 1 : (origin.x < 0 ? -1 : (Math.random()<0.5?1:-1)));
+      const dirY = Math.cos(ang) * baseUp + Math.random()*0.4;
+      const dirZ = (Math.random()-0.5) * 0.6;
+      binPos[i*3+0] = origin.x + (Math.random()-0.5)*0.2;
+      binPos[i*3+1] = origin.y + 0.05;
+      binPos[i*3+2] = origin.z + (Math.random()-0.5)*0.2;
+      binVel[i*3+0] = Math.cos(ang)*speed * Math.sign(dirX||1) * (0.4+Math.random()*0.7);
+      binVel[i*3+1] = dirY * speed;
+      binVel[i*3+2] = dirZ * speed;
+      binScale[i] = (0.55 + Math.random()*1.1) * power;
+      binRot[i] = Math.random()*Math.PI*2;
+      binRotVel[i] = (Math.random()-0.5)*8.0;
+      binLifeMax[i] = 1.0 + Math.random()*1.8;
+      binLife[i] = binLifeMax[i];
+      binState[i] = 1;
+      // randomize 0/1 uv offset
+      binUvOffset[i*2+0] = (Math.random()<0.5)?0.0:0.5;
+      spawned++;
+    }
+    binGeo.attributes.aUvOffset.needsUpdate = true;
+    binGeo.attributes.aScale.needsUpdate = true;
+    return spawned;
+  }
+
+  // =============================================================================
+  // 6. POST PROCESSING
+  // =============================================================================
+  let composer = null;
+  if (PERF.bloom) {
+    composer = new EffectComposer(renderer);
+    composer.addPass(new RenderPass(scene, camera));
+    const bloom = new UnrealBloomPass(new THREE.Vector2(window.innerWidth, window.innerHeight), PERF.bloomStrength, 0.62, 0.18);
+    bloom.threshold = 0.78; bloom.radius = 0.55;
+    composer.addPass(bloom);
+    if (!PERF.mobile) {
+      const fxaa = new ShaderPass(FXAAShader);
+      const pr = renderer.getPixelRatio();
+      fxaa.material.uniforms['resolution'].value.set(1/(window.innerWidth*pr), 1/(window.innerHeight*pr));
+      composer.addPass(fxaa);
+    }
+    composer.setSize(window.innerWidth, window.innerHeight);
+    composer.setPixelRatio(PERF.dpr);
+  }
+
+  // =============================================================================
+  // 7. TIMELINE (custom; not GSAP — I want precise control + tiny payload)
+  //    Phase timings per PROMPT.md. All times in seconds.
+  // =============================================================================
+  const T = {
+    introHold:     [0.0, 1.5],
+    fall:          [1.5, 3.8],
+    preImpact:     [3.8, 4.5],
+    firstImpact:   [4.5, 5.2],
+    bounce:        [5.2, 6.8],
+    secondFall:    [6.8, 8.2],
+    binarySplash:  [8.2, 9.5],
+    fade:          [9.5, 12.0],
+  };
+
+  // camera rig state
+  const cam = {
+    pos: camera.position.clone(),
+    lookY: FRAMING.camLookY,
+    shake: 0,           // current shake magnitude
+    shakeDecay: 4.5,
+    fov: 46,
+  };
+  camera.lookAt(0, cam.lookY, 0);
+
+  // whole-glyph fall state
+  const fall = {
+    xiang: { pos: xiangWhole.position.clone(), rot: 0, rotVel: 0, active:false },
+    fa:    { pos: faWhole.position.clone(),    rot: 0, rotVel: 0, active:false },
+  };
+  // physics consts
+  const G = 9.8 * 3.2;   // exaggerated gravity for cinematic weight (world units)
+
+  // We'll drive everything from a single clock t (seconds since start).
+  let t0 = null;
+  let finished = false;
+  let groundY = -6.0; // ground current y (rises from below)
+  let groundOpacity = 0;
+
+  // Whole-glyph impact flag
+  let firstImpactDone = false;
+  let secondImpactStarted = false;
+  let binaryStarted = false;
+
+  // input: user can replay
+  const replayBtn = document.getElementById('replay');
+  replayBtn.addEventListener('click', () => { replay(); });
+
+  function replay() {
+    // reset all state
+    finished = false; t0 = null;
+    firstImpactDone = false; secondImpactStarted = false; binaryStarted = false;
+    replayBtn.classList.add('hidden');
+    // reset glyphs
+    xiangWhole.visible = true; faWhole.visible = true;
+    xiangWhole.position.set(XIANG_X, PAIR_Y, PAIR_Z); xiangWhole.rotation.set(0,0,0);
+    faWhole.position.set(FA_X, PAIR_Y + 0.05, PAIR_Z); faWhole.rotation.set(0,0,0);
+    fall.xiang.pos.copy(xiangWhole.position); fall.xiang.rot = 0; fall.xiang.rotVel = 0;
+    fall.fa.pos.copy(faWhole.position); fall.fa.rot = 0; fall.fa.rotVel = 0;
+    ideaGroup.children.forEach(c => { c.material.opacity = 0.62; c.visible = true; c.scale.setScalar(1); });
+    // remove radical shards
+    radicalShards.forEach(s => { scene.remove(s.mesh); s.mesh.geometry.dispose(); });
+    radicalShards = [];
+    // reset binary
+    for (let i=0;i<BIN_COUNT;i++){ binState[i]=0; binLife[i]=0;
+      _dummy.position.set(0,-100,0); _dummy.scale.setScalar(0.0001); _dummy.updateMatrix();
+      binMesh.setMatrixAt(i,_dummy.matrix);
+    }
+    binMesh.instanceMatrix.needsUpdate = true;
+    binMat.userData.updateGlobalOpacity(0.0);
+    // camera
+    cam.pos.set(0, FRAMING.camStartY, FRAMING.camStartZ);
+    cam.lookY = FRAMING.camLookY; cam.shake = 0; cam.fov = 46;
+    camera.position.copy(cam.pos); camera.lookAt(0, cam.lookY, 0);
+    // ground
+    ground.position.y = -6.0; groundY = -6.0; groundOpacity = 0; groundMat.opacity = 0;
+    groundRim.intensity = 0;
+    // hide boot
+    document.getElementById('boot').classList.add('gone');
+  }
+
+  // boot-hide after first frame renders
+  requestAnimationFrame(() => {
+    setTimeout(() => document.getElementById('boot').classList.add('gone'), 80);
+  });
+
+  // =============================================================================
+  // 8. UPDATE LOOP
+  // =============================================================================
+  function lerp(a,b,t){ return a + (b-a)*t; }
+  function clamp(v,a,b){ return Math.max(a, Math.min(b, v)); }
+  function smoothstep(a,b,x){ const t = clamp((x-a)/(b-a),0,1); return t*t*(3-2*t); }
+  function easeInQuad(t){ return t*t; }
+  function easeOutCubic(t){ const f=1-t; return 1 - f*f*f; }
+  function easeInCubic(t){ return t*t*t; }
+
+  const _vTmp = new THREE.Vector3();
+
+  function stepRadicalPhysics(s, dt, gravity) {
+    // ballistic with rotation, ground bounce
+    s.vel.y -= gravity * dt * (1.0 / s.mass) * 0.85;
+    s.mesh.position.x += s.vel.x * dt;
+    s.mesh.position.y += s.vel.y * dt;
+    s.mesh.position.z += s.vel.z * dt;
+    s.mesh.rotation.x += s.angVel.x * dt;
+    s.mesh.rotation.y += s.angVel.y * dt;
+    s.mesh.rotation.z += s.angVel.z * dt;
+    // ground bounce at groundY
+    if (s.mesh.position.y <= groundY + 0.1) {
+      s.mesh.position.y = groundY + 0.1;
+      if (s.vel.y < -0.4) {
+        s.vel.y *= -0.32;                 // damped rebound
+        s.vel.x *= 0.55; s.vel.z *= 0.55;
+        s.angVel.multiplyScalar(0.6);
+      } else {
+        s.vel.set(0,0,0); s.angVel.set(0,0,0);
+        s.phase = 'rest';
+      }
+    }
+  }
+
+  let last = performance.now();
+  function animate(now) {
+    requestAnimationFrame(animate);
+    if (t0 === null) t0 = now;
+    const t = (now - t0) / 1000;
+    let dt = (now - last) / 1000; last = now;
+    if (dt > 0.05) dt = 0.05; // clamp
+
+    // ----- dust drift -----
+    const dposAttr = dustGeo.attributes.position;
+    for (let i=0;i<PERF.dustCount;i++){
+      dposAttr.array[i*3+0] += dustVel[i*3+0] * dt * 60 * 0.016;
+      dposAttr.array[i*3+1] += dustVel[i*3+1] * dt * 60 * 0.016;
+      dposAttr.array[i*3+2] += dustVel[i*3+2] * dt * 60 * 0.016;
+      // wrap
+      if (dposAttr.array[i*3+1] > 26) dposAttr.array[i*3+1] = -4;
+      if (dposAttr.array[i*3+1] < -5) dposAttr.array[i*3+1] = 26;
+      if (Math.abs(dposAttr.array[i*3+0]) > 22) dposAttr.array[i*3+0] *= -0.98;
+    }
+    dposAttr.needsUpdate = true;
+    dustMat.opacity = 0.38 + 0.12 * Math.sin(t*0.7);
+
+    // ----- camera breathing during intro -----
+    if (t < T.fall[0]) {
+      cam.pos.y = FRAMING.camStartY + Math.sin(t*0.6) * 0.08;
+      cam.pos.x = Math.sin(t*0.43) * 0.04;
+      camera.position.copy(cam.pos);
+      camera.lookAt(0, cam.lookY, 0);
+    }
+
+    // ----- ground rise (during fall) -----
+    if (t >= T.fall[0] && t <= T.firstImpact[1]) {
+      const p = clamp((t - T.fall[0]) / (T.firstImpact[0] - T.fall[0]), 0, 1);
+      // rise smoothly from -6 to 0
+      groundY = lerp(-6.0, 0.0, easeOutCubic(p));
+      ground.position.y = groundY;
+      groundOpacity = smoothstep(0.1, 0.9, p);
+      groundMat.opacity = groundOpacity;
+      groundRim.intensity = groundOpacity * 1.6;
+    }
+
+    // ----- preImpact: lens deceleration (subtle) -----
+    // handled inside fall phase via camera updates below.
+
+    // ----- FALL phase: whole glyphs fall -----
+    if (t >= T.fall[0] && t < T.firstImpact[0] && !firstImpactDone) {
+      const ft = t - T.fall[0];            // elapsed in fall
+      const fallDur = T.firstImpact[0] - T.fall[0];
+      const fp = ft / fallDur;
+
+      // gravity-driven but orchestrated: integrate velocity for cinematic weight.
+      // 想 heavier → falls faster (use larger effective g), and starts slightly earlier.
+      const gXiang = G * 1.15;
+      const gFa = G * 0.95;
+      // initial offset: at t=T.fall[0], both at rest; we integrate from there.
+      // We'll store accumulated velocity in fall.xiang.vy etc.
+      if (!fall.xiang.vy) { fall.xiang.vy = 0; fall.fa.vy = 0; fall.xiang.startT = t; fall.fa.startT = t + 0.05; }
+      if (t >= fall.xiang.startT) {
+        fall.xiang.vy += gXiang * dt * 0.85;
+        fall.xiang.pos.y -= fall.xiang.vy * dt;
+        fall.xiang.rotVel = lerp(fall.xiang.rotVel, -0.18, dt*1.4); // slight CCW tilt
+        fall.xiang.rot += fall.xiang.rotVel * dt;
+      }
+      if (t >= fall.fa.startT) {
+        fall.fa.vy += gFa * dt * 0.85;
+        fall.fa.pos.y -= fall.fa.vy * dt;
+        // 法 tilts toward 想 (left): positive z-rot tilts top toward left
+        fall.fa.rotVel = lerp(fall.fa.rotVel, 0.22, dt*1.2);
+        fall.fa.rot += fall.fa.rotVel * dt;
+      }
+      xiangWhole.position.copy(fall.xiang.pos);
+      xiangWhole.rotation.z = fall.xiang.rot;
+      faWhole.position.copy(fall.fa.pos);
+      faWhole.rotation.z = fall.fa.rot;
+
+      // IDEA fades during fall start
+      if (ft < 0.4) {
+        const ip = ft / 0.4;
+        ideaGroup.children.forEach(c => {
+          c.material.opacity = 0.62 * (1 - ip) ;
+          c.scale.y = 1 + ip * 0.6;       // stretch into a faint trail
+          c.scale.x = 1 - ip * 0.2;
+        });
+      } else {
+        ideaGroup.children.forEach(c => c.visible = false);
+      }
+
+      // camera follows down (with weight: starts slow, accelerates)
+      {
+        const camFollow = easeInQuad(fp);
+        const targetY = FRAMING.camStartY - camFollow * (FRAMING.camStartY - 6.5);
+        cam.pos.y = lerp(cam.pos.y, targetY, dt * 4.0);
+        // slight downward tilt as we go
+        cam.lookY = lerp(cam.lookY, 2.0 + 4.0*(1-fp), dt*3.0);
+        // lower angle as approaching ground (move camera lower in z slightly)
+        cam.pos.z = lerp(cam.pos.z, FRAMING.camStartZ - 2.2 * fp, dt*2.0);
+        camera.position.copy(cam.pos);
+        camera.lookAt(0, cam.lookY, 0);
+      }
+    }
+
+    // ----- FIRST IMPACT -----
+    if (!firstImpactDone && (t >= T.firstImpact[0] || (fall.xiang.pos && fall.xiang.pos.y <= groundY + 0.4))) {
+      firstImpactDone = true;
+      // trigger camera shake
+      cam.shake = 0.55;
+      // build radical shards NOW (using current whole-glyph positions)
+      radicalShards = buildRadicalShards(xiangWhole.position.clone(), faWhole.position.clone());
+      // hide wholes
+      xiangWhole.visible = false; faWhole.visible = false;
+      // give each shard initial dispersion velocity (explosive outward + up)
+      const impactX = xiangWhole.position.x;
+      for (const s of radicalShards) {
+        s.mesh.visible = true;
+        s.phase = 'airborne-1';
+        // outward from parent center
+        const pcx = (s.parent === '想') ? xiangWhole.position.x : faWhole.position.x;
+        const pcy = (s.parent === '想') ? xiangWhole.position.y : faWhole.position.y;
+        const dx = s.mesh.position.x - pcx;
+        const dy = s.mesh.position.y - pcy;
+        const mag = Math.hypot(dx, dy) || 1;
+        const power = 3.0 + Math.random()*2.6;
+        s.vel.set(
+          (dx/mag)*power * (0.6+Math.random()*0.8) + (Math.random()-0.5)*1.5,
+          4.5 + Math.random()*3.0 - s.mass*0.5,
+          (Math.random()-0.5)*1.8
+        );
+        // angular velocity inversely proportional to mass
+        const av = (3.5 + Math.random()*5.0) / s.mass;
+        s.angVel.set((Math.random()-0.5)*av, (Math.random()-0.5)*av*0.6, (Math.random()-0.5)*av);
+      }
+      // play first-impact sound
+      playFirstImpact();
+    }
+
+    // ----- radical physics (always when shards exist) -----
+    {
+      const nowBin = t;
+      for (const s of radicalShards) {
+        if (s.phase === 'dormant') continue;
+        // slow-mo window during bounce phase
+        let timeScale = 1.0;
+        if (nowBin >= T.bounce[0] && nowBin <= T.bounce[1]) {
+          timeScale = 0.35; // slow motion
+        } else if (nowBin >= T.secondFall[0]) {
+          timeScale = 1.15;  // re-accelerate
+        }
+        stepRadicalPhysics(s, dt * timeScale, G);
+      }
+    }
+
+    // ----- camera shake decay + follow during bounce -----
+    if (firstImpactDone) {
+      cam.shake = Math.max(0, cam.shake - cam.shakeDecay * dt);
+      // during bounce, push camera slightly closer & lower
+      if (t >= T.bounce[0] && t < T.secondFall[0]) {
+        cam.pos.y = lerp(cam.pos.y, 5.0, dt*1.5);
+        cam.pos.z = lerp(cam.pos.z, FRAMING.camStartZ - 4.5, dt*1.5);
+        cam.lookY = lerp(cam.lookY, 1.5, dt*2.0);
+      } else if (t >= T.secondFall[0] && t < T.binarySplash[0]) {
+        cam.pos.y = lerp(cam.pos.y, 6.2, dt*1.2);
+        cam.pos.z = lerp(cam.pos.z, FRAMING.camStartZ - 3.0, dt*1.2);
+        cam.lookY = lerp(cam.lookY, 1.2, dt*2.0);
+      }
+    }
+
+    // ----- SECOND IMPACT → binary splash -----
+    if (t >= T.binarySplash[0] && !binaryStarted) {
+      binaryStarted = true;
+      // for each shard that is at rest or near ground, emit a burst (staggered)
+      let idx = 0;
+      for (const s of radicalShards) {
+        const delay = idx * 0.07 + Math.random()*0.06;
+        setTimeout(() => {
+          if (finished) return;
+          // burst at shard position
+          const count = Math.floor(BIN_COUNT / radicalShards.length * (0.7 + Math.random()*0.6));
+          emitBinaryBurst(s.mesh.position.clone(), count, { power: 0.9 + Math.random()*0.5, up: 1.0 });
+          // fade the radical out as it converts to data
+          s.converted = true;
+          playBinarySplash(count);
+        }, delay * 1000);
+        idx++;
+      }
+      // camera shake small at splash onset
+      cam.shake = Math.max(cam.shake, 0.18);
+    }
+
+    // radical fade during/after binary splash
+    if (binaryStarted) {
+      for (const s of radicalShards) {
+        if (s.converted) {
+          s.mesh.material.opacity = lerp(s.mesh.material.opacity ?? 1, 0, dt*2.5);
+          s.mesh.material.transparent = true;
+          s.mesh.material.needsUpdate = true;
+          if ((s.mesh.material.opacity ?? 1) < 0.02) s.mesh.visible = false;
+        }
+      }
+    }
+
+    // ----- binary physics update -----
+    if (binaryStarted) {
+      binMat.userData.updateGlobalOpacity(1.0);
+      for (let i=0;i<BIN_COUNT;i++){
+        if (binState[i] !== 1) continue;
+        binLife[i] -= dt;
+        if (binLife[i] <= 0) {
+          binState[i] = 2; // dead
+          _dummy.position.set(binPos[i*3], -200, binPos[i*3+2]);
+          _dummy.scale.setScalar(0.0001); _dummy.rotation.z = 0;
+          _dummy.updateMatrix();
+          binMesh.setMatrixAt(i, _dummy.matrix);
+          continue;
+        }
+        // physics: gravity + air drag
+        binVel[i*3+1] -= G * 0.45 * dt;
+        binVel[i*3+0] *= (1 - 0.9*dt);
+        binVel[i*3+2] *= (1 - 0.9*dt);
+        binPos[i*3+0] += binVel[i*3+0] * dt;
+        binPos[i*3+1] += binVel[i*3+1] * dt;
+        binPos[i*3+2] += binVel[i*3+2] * dt;
+        // ground slide + sink
+        if (binPos[i*3+1] < groundY + 0.02) {
+          binPos[i*3+1] = groundY + 0.02;
+          binVel[i*3+1] *= -0.18;
+          binVel[i*3+0] *= 0.7;
+          binVel[i*3+2] *= 0.7;
+        }
+        binRot[i] += binRotVel[i] * dt;
+        binRotVel[i] *= (1 - 0.6*dt);
+        // fade as life runs low
+        const lifeFrac = binLife[i] / binLifeMax[i];
+        const scale = binScale[i] * smoothstep(0.0, 0.15, lifeFrac);
+        _dummy.position.set(binPos[i*3], binPos[i*3+1], binPos[i*3+2]);
+        _dummy.scale.setScalar(scale);
+        _dummy.rotation.set(0, 0, binRot[i]);
+        _dummy.updateMatrix();
+        binMesh.setMatrixAt(i, _dummy.matrix);
+      }
+      binMesh.instanceMatrix.needsUpdate = true;
+    }
+
+    // ----- FADE OUT phase -----
+    if (t >= T.fade[0]) {
+      const fp = (t - T.fade[0]) / (T.fade[1] - T.fade[0]);
+      // camera pulls back
+      cam.pos.y = lerp(cam.pos.y, FRAMING.camStartY - 2.0, dt*0.8);
+      cam.pos.z = lerp(cam.pos.z, FRAMING.camStartZ + 3.0, dt*0.8);
+      cam.lookY = lerp(cam.lookY, 1.0, dt*1.0);
+      // dim lights
+      ambient.intensity = lerp(ambient.intensity, 0.06, dt*0.6);
+      key.intensity = lerp(key.intensity, 0.08, dt*0.6);
+      groundRim.intensity = lerp(groundRim.intensity, 0.0, dt*0.6);
+      // fade lingering binary
+      const go = clamp(1 - fp*1.2, 0, 1);
+      binMat.userData.updateGlobalOpacity(go * 0.55);
+      dustMat.opacity = lerp(dustMat.opacity, 0.04, dt*0.6);
+      // a thin final light sweep: modulate bloom via a brief key intensity blip
+      if (fp > 0.7 && fp < 0.82) {
+        key.intensity = lerp(key.intensity, 0.6, dt*8);
+      }
+      if (fp >= 1.0 && !finished) {
+        finished = true;
+        replayBtn.classList.remove('hidden');
+      }
+    }
+
+    // ----- camera shake apply -----
+    if (cam.shake > 0.001) {
+      const s = cam.shake;
+      camera.position.x = cam.pos.x + (Math.random()-0.5)*s*0.35;
+      camera.position.y = cam.pos.y + (Math.random()-0.5)*s*0.35;
+      camera.position.z = cam.pos.z + (Math.random()-0.5)*s*0.2;
+    } else {
+      camera.position.copy(cam.pos);
+    }
+    camera.lookAt(0, cam.lookY, 0);
+    camera.updateProjectionMatrix();
+
+    // ----- render -----
+    if (composer) composer.render(); else renderer.render(scene, camera);
+  }
+  requestAnimationFrame(animate);
+
+  // =============================================================================
+  // 9. SOUND (Web Audio, procedural)
+  // =============================================================================
+  let actx = null;
+  function ensureAudio() {
+    if (!actx) {
+      try { actx = new (window.AudioContext || window.webkitAudioContext)(); }
+      catch(e) { actx = null; }
+    }
+    if (actx && actx.state === 'suspended') actx.resume();
+    return actx;
+  }
+  // start ambient hum on first user gesture or autoplay attempt
+  let ambientNodes = null;
+  function startAmbient() {
+    const ctx = ensureAudio(); if (!ctx) return;
+    if (ambientNodes) return;
+    // low drone: two detuned sines + filtered noise
+    const o1 = ctx.createOscillator(); o1.type='sine'; o1.frequency.value=42;
+    const o2 = ctx.createOscillator(); o2.type='sine'; o2.frequency.value=63;
+    const o3 = ctx.createOscillator(); o3.type='triangle'; o3.frequency.value=84.5;
+    const g = ctx.createGain(); g.gain.value = 0.0;
+    o1.connect(g); o2.connect(g); o3.connect(g);
+    // noise
+    const bufSize = 2 * ctx.sampleRate;
+    const noiseBuf = ctx.createBuffer(1, bufSize, ctx.sampleRate);
+    const out = noiseBuf.getChannelData(0);
+    for (let i=0;i<bufSize;i++) out[i] = (Math.random()*2-1) * 0.5;
+    const noise = ctx.createBufferSource(); noise.buffer = noiseBuf; noise.loop = true;
+    const nf = ctx.createBiquadFilter(); nf.type='lowpass'; nf.frequency.value=240; nf.Q.value=0.7;
+    const ng = ctx.createGain(); ng.gain.value = 0.018;
+    noise.connect(nf); nf.connect(ng); ng.connect(ctx.destination);
+    g.connect(ctx.destination);
+    o1.start(); o2.start(); o3.start(); noise.start();
+    ambientNodes = { osc:[o1,o2,o3], gain:g, noise, noiseGain:ng };
+  }
+  function setAmbient(v) { if (ambientNodes) ambientNodes.gain.gain.setTargetAtTime(v, actx.currentTime, 0.4); }
+
+  let windNode = null;
+  function startWind(t) {
+    // t in [0,1] ramps intensity 0→0.32
+    const ctx = ensureAudio(); if (!ctx) return;
+    if (!windNode) {
+      const bufSize = 2 * ctx.sampleRate;
+      const buf = ctx.createBuffer(1, bufSize, ctx.sampleRate);
+      const out = buf.getChannelData(0);
+      for (let i=0;i<bufSize;i++) out[i] = (Math.random()*2-1);
+      windNode = ctx.createBufferSource(); windNode.buffer = buf; windNode.loop = true;
+      const f = ctx.createBiquadFilter(); f.type='bandpass'; f.frequency.value=180; f.Q.value=1.4;
+      const g = ctx.createGain(); g.gain.value = 0;
+      windNode.connect(f); f.connect(g); g.connect(ctx.destination);
+      windNode.f = f; windNode.g = g; windNode.start();
+    }
+    windNode.g.gain.setTargetAtTime(0.32 * t, ctx.currentTime, 0.3);
+    windNode.f.frequency.setTargetAtTime(180 + 180*t, ctx.currentTime, 0.5);
+  }
+  function stopWind() { if (windNode) windNode.g.gain.setTargetAtTime(0, actx.currentTime, 0.4); }
+
+  function playFirstImpact() {
+    const ctx = ensureAudio(); if (!ctx) return;
+    const t0 = ctx.currentTime;
+    // dry stone impact: short burst of filtered noise + low sine thump
+    const bufSize = Math.floor(0.4 * ctx.sampleRate);
+    const buf = ctx.createBuffer(1, bufSize, ctx.sampleRate);
+    const out = buf.getChannelData(0);
+    for (let i=0;i<bufSize;i++){ out[i] = (Math.random()*2-1) * Math.pow(1 - i/bufSize, 2.2); }
+    const src = ctx.createBufferSource(); src.buffer = buf;
+    const f = ctx.createBiquadFilter(); f.type='lowpass'; f.frequency.value=900; f.Q.value=0.7;
+    const g = ctx.createGain(); g.gain.value = 0.6;
+    src.connect(f); f.connect(g); g.connect(ctx.destination); src.start();
+    // thump
+    const o = ctx.createOscillator(); o.type='sine'; o.frequency.setValueAtTime(120, t0);
+    o.frequency.exponentialRampToValueAtTime(38, t0+0.35);
+    const og = ctx.createGain(); og.gain.setValueAtTime(0.0, t0); og.gain.linearRampToValueAtTime(0.55, t0+0.01);
+    og.gain.exponentialRampToValueAtTime(0.001, t0+0.55);
+    o.connect(og); og.connect(ctx.destination); o.start(t0); o.stop(t0+0.6);
+    // brittle crackle (wood/ceramic) — short highpassed noise blips
+    for (let k=0;k<5;k++){
+      const bs = Math.floor(0.05*ctx.sampleRate);
+      const b = ctx.createBuffer(1, bs, ctx.sampleRate);
+      const o2 = b.getChannelData(0);
+      for (let i=0;i<bs;i++) o2[i] = (Math.random()*2-1) * Math.pow(1 - i/bs, 1.8);
+      const s = ctx.createBufferSource(); s.buffer = b;
+      const hf = ctx.createBiquadFilter(); hf.type='highpass'; hf.frequency.value=2200 + k*400;
+      const hg = ctx.createGain(); hg.gain.value = 0.12 / (k+1);
+      s.connect(hf); hf.connect(hg); hg.connect(ctx.destination); s.start(t0 + k*0.03);
+    }
+  }
+  function playRadicalTick(mass) {
+    const ctx = ensureAudio(); if (!ctx) return;
+    const t0 = ctx.currentTime;
+    const o = ctx.createOscillator(); o.type='triangle';
+    const base = 240 + 320/Math.max(mass,0.4);
+    o.frequency.setValueAtTime(base, t0); o.frequency.exponentialRampToValueAtTime(base*0.6, t0+0.08);
+    const g = ctx.createGain(); g.gain.setValueAtTime(0.0, t0); g.gain.linearRampToValueAtTime(0.14, t0+0.005);
+    g.gain.exponentialRampToValueAtTime(0.001, t0+0.12);
+    o.connect(g); g.connect(ctx.destination); o.start(t0); o.stop(t0+0.14);
+  }
+  function playBinarySplash(count) {
+    const ctx = ensureAudio(); if (!ctx) return;
+    const t0 = ctx.currentTime;
+    // fine digital grain: dense highpassed noise
+    const dur = 0.6;
+    const bufSize = Math.floor(dur * ctx.sampleRate);
+    const buf = ctx.createBuffer(1, bufSize, ctx.sampleRate);
+    const out = buf.getChannelData(0);
+    for (let i=0;i<bufSize;i++){
+      const env = Math.pow(1 - i/bufSize, 1.6);
+      out[i] = (Math.random()*2-1) * env * 0.5;
+    }
+    const src = ctx.createBufferSource(); src.buffer = buf;
+    const hp = ctx.createBiquadFilter(); hp.type='highpass'; hp.frequency.value=3000;
+    const g = ctx.createGain(); g.gain.value = 0.22;
+    src.connect(hp); hp.connect(g); g.connect(ctx.destination); src.start(t0);
+    // liquid splash layer: bandpass noise
+    const bpBuf = ctx.createBuffer(1, bufSize, ctx.sampleRate);
+    const o2 = bpBuf.getChannelData(0);
+    for (let i=0;i<bufSize;i++){ o2[i] = (Math.random()*2-1) * Math.pow(1 - i/bufSize, 2.4); }
+    const s2 = ctx.createBufferSource(); s2.buffer = bpBuf;
+    const bf = ctx.createBiquadFilter(); bf.type='bandpass'; bf.frequency.value=1400; bf.Q.value=0.6;
+    const g2 = ctx.createGain(); g2.gain.value=0.18;
+    s2.connect(bf); bf.connect(g2); g2.connect(ctx.destination); s2.start(t0+0.02);
+  }
+  function playFinalPulse() {
+    const ctx = ensureAudio(); if (!ctx) return;
+    const t0 = ctx.currentTime;
+    const o = ctx.createOscillator(); o.type='sine'; o.frequency.setValueAtTime(1200, t0);
+    o.frequency.exponentialRampToValueAtTime(420, t0+0.6);
+    const g = ctx.createGain(); g.gain.setValueAtTime(0.0, t0); g.gain.linearRampToValueAtTime(0.05, t0+0.05);
+    g.gain.exponentialRampToValueAtTime(0.001, t0+0.7);
+    o.connect(g); g.connect(ctx.destination); o.start(t0); o.stop(t0+0.75);
+  }
+
+  // schedule the whole soundtrack relative to t0
+  // We hook into the animate loop via a lightweight scheduler.
+  let soundScheduled = false;
+  function scheduleSound() {
+    if (soundScheduled) return; soundScheduled = true;
+    startAmbient();
+    // wind ramps during fall
+    setTimeout(() => startWind(0.3), T.fall[0]*1000);
+    setTimeout(() => startWind(1.0), (T.fall[0]+0.8)*1000);
+    setTimeout(() => stopWind(), T.firstImpact[0]*1000);
+    // first impact sound triggered in impact handler (playFirstImpact)
+    // radical ticks: schedule a few at bounce times
+    setTimeout(() => radicalShards.forEach(s => playRadicalTick(s.mass)), (T.bounce[0]+0.1)*1000);
+    setTimeout(() => radicalShards.forEach(s => playRadicalTick(s.mass)), (T.bounce[0]+0.8)*1000);
+    setTimeout(() => radicalShards.forEach(s => playRadicalTick(s.mass)), (T.secondFall[0]+0.3)*1000);
+    // binary splash handled by emit callbacks
+    // final pulse
+    setTimeout(() => { setAmbient(0.04); playFinalPulse(); }, (T.fade[0]+1.2)*1000);
+    setTimeout(() => setAmbient(0.0), (T.fade[1]-0.3)*1000);
+  }
+
+  // audio unlock on first interaction
+  function tryUnlock() {
+    ensureAudio();
+    scheduleSound();
+    window.removeEventListener('pointerdown', tryUnlock);
+    window.removeEventListener('keydown', tryUnlock);
+  }
+  window.addEventListener('pointerdown', tryUnlock, { once: true });
+  window.addEventListener('keydown', tryUnlock, { once: true });
+  // also attempt autoplay after a tick (browsers vary)
+  setTimeout(() => { ensureAudio(); scheduleSound(); }, 250);
+
+  // =============================================================================
+  // 10. RESIZE
+  // =============================================================================
+  function onResize() {
+    const w = window.innerWidth, h = window.innerHeight;
+    camera.aspect = w/h; camera.updateProjectionMatrix();
+    renderer.setSize(w, h);
+    renderer.setPixelRatio(PERF.dpr);
+    if (composer) { composer.setSize(w, h); }
+  }
+  window.addEventListener('resize', onResize);
+
+  // expose for debugging
+  window.__intro = { scene, camera, renderer, PERF, GLYPH_DATA, radicalShards, binMesh };
+  </script>
+</body>
+</html>

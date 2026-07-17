@@ -57,7 +57,7 @@
 </style>
 </head>
 <body>
-<nav><span class="logo">Model Arena</span><a href="#minecraft">Minecraft</a><a href="#apartment">Apartment</a><a href="https://github.com/vimalinx/model-arena">GitHub ↗</a></nav>
+<nav><span class="logo">Model Arena</span><a href="#idea-to-binary">Idea→Binary</a><a href="#minecraft">Minecraft</a><a href="#apartment">Apartment</a><a href="https://github.com/vimalinx/model-arena">GitHub ↗</a></nav>
 <div class="hero"><h1>Model Arena</h1><p>Same prompt, multiple models, real outputs. Click any card to play / inspect.</p></div>
 
 <!-- MINECRAFT -->
@@ -101,6 +101,47 @@
       <tr><td>Water</td><td class="no">✗</td><td class="yes">✓</td><td class="yes">✓</td></tr>
       <tr><td>Glass / transparency</td><td class="no">✗</td><td class="no">✗</td><td class="yes">✓</td></tr>
       <tr><td>Booted without fixes</td><td class="no">✗</td><td class="yes">✓</td><td class="yes">✓</td><td class="yes">✓</td></tr>
+    </tbody></table>
+  </details>
+</div>
+
+<!-- IDEA TO BINARY -->
+<div class="suite" id="idea-to-binary">
+  <div class="suite-head"><h2>Idea to Binary — Immersive Intro</h2><span class="count">4 models</span></div>
+  <details class="prompt"><summary><span class="arrow">▶</span> Prompt (click to expand)</summary><div class="prompt-body"><code>Create a full-screen immersive intro animation that starts with the concept of IDEA (想法) in Chinese calligraphy, then transitions through radical decomposition into binary code, ending with a terminal-style text reveal. Use Three.js + GSAP. Single HTML file.</code></div></details>
+  <div class="cards">
+    <div class="card">
+      <a class="thumb-wrap" href="demos/idea-to-binary/kimi-k3/" target="_blank"><img class="thumb" src="assets/idea-to-binary/kimi-k3/thumb.png"><div class="overlay"><span>▶ Play</span></div></a>
+      <div class="card-body"><span class="badge green">Runs great</span><h3>Kimi K3</h3><div class="model">Kimi CLI · kimi-for-coding</div>
+        <div class="stats"><span class="k">Lines</span><span class="v">~600</span><span class="k">Three.js</span><span class="v">✓</span><span class="k">GSAP</span><span class="v">✓</span><span class="k">Fixes</span><span class="v">0</span></div>
+        <div class="actions"><a class="btn primary" href="demos/idea-to-binary/kimi-k3/" target="_blank">Play</a></div></div>
+    </div>
+    <div class="card">
+      <a class="thumb-wrap" href="demos/idea-to-binary/opencodego-deepseek/" target="_blank"><img class="thumb" src="assets/idea-to-binary/opencodego-deepseek/thumb.png"><div class="overlay"><span>▶ Play</span></div></a>
+      <div class="card-body"><span class="badge green">Runs clean</span><h3>DeepSeek V4 Pro</h3><div class="model">OpenCode Go</div>
+        <div class="stats"><span class="k">Lines</span><span class="v">~500</span><span class="k">Three.js</span><span class="v">✓</span><span class="k">Font</span><span class="v">canvas mode</span><span class="k">Fixes</span><span class="v">0</span></div>
+        <div class="actions"><a class="btn primary" href="demos/idea-to-binary/opencodego-deepseek/" target="_blank">Play</a></div></div>
+    </div>
+    <div class="card">
+      <a class="thumb-wrap" href="demos/idea-to-binary/omp-glm-5-2/" target="_blank"><img class="thumb" src="assets/idea-to-binary/omp-glm-5-2/thumb.png"><div class="overlay"><span>▶ Play</span></div></a>
+      <div class="card-body"><span class="badge green">Runs</span><h3>GLM-5.2</h3><div class="model">OMP · zhipu-coding-plan</div>
+        <div class="stats"><span class="k">Lines</span><span class="v">~400</span><span class="k">Three.js</span><span class="v">✓</span><span class="k">Binary</span><span class="v">✓</span><span class="k">Fixes</span><span class="v">0</span></div>
+        <div class="actions"><a class="btn primary" href="demos/idea-to-binary/omp-glm-5-2/" target="_blank">Play</a></div></div>
+    </div>
+    <div class="card" style="opacity:.5">
+      <div class="thumb-wrap"><img class="thumb" src="assets/idea-to-binary/claude/thumb.png"></div>
+      <div class="card-body"><span class="badge yellow">Blank render</span><h3>Claude Sonnet</h3><div class="model">Claude Code</div>
+        <div class="stats"><span class="k">Status</span><span class="v">loads clean, 0% visible</span><span class="k">Bug</span><span class="v">buildShapes Y-flip</span></div></div>
+    </div>
+  </div>
+  <details class="cmp-wrap"><summary>Feature comparison table</summary>
+    <table class="cmp-table"><thead><tr><th>Dimension</th><th>Kimi K3</th><th>DeepSeek V4</th><th>GLM-5.2</th><th>Claude</th></tr></thead><tbody>
+      <tr><td>Three.js font rendering</td><td class="yes">✓ opentype.js</td><td class="yes">✓ canvas mode</td><td class="yes">✓ canvas mode</td><td class="no">✗ blank</td></tr>
+      <tr><td>Particle effects</td><td class="yes">✓</td><td class="yes">✓</td><td class="yes">✓</td><td class="yes">✓</td></tr>
+      <tr><td>Binary code transition</td><td class="yes">✓</td><td class="yes">✓</td><td class="yes">✓</td><td class="yes">✓</td></tr>
+      <tr><td>GSAP timeline</td><td class="yes">✓</td><td class="no">✗</td><td class="no">✗</td><td class="yes">✓</td></tr>
+      <tr><td>Camera movement</td><td class="yes">✓</td><td class="yes">✓</td><td class="yes">✓</td><td class="yes">✓</td></tr>
+      <tr><td>Boot without fixes</td><td class="yes">✓</td><td class="yes">✓</td><td class="yes">✓</td><td class="no">✗ blank</td></tr>
     </tbody></table>
   </details>
 </div>

@@ -1,0 +1,59 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, viewport-fit=cover" />
+  <meta name="theme-color" content="#050608" />
+  <title>想法 · IDEA — Idea to Binary</title>
+  <meta name="description" content="想法 → 偏旁与笔画 → 二进制。一段关于思想如何被拆解为信息的电影感开场动画。" />
+  <link rel="stylesheet" href="./css/styles.css" />
+  <!-- Libraries: Three.js as ESM (importmap), GSAP as a global UMD script. -->
+  <script type="importmap">
+  {
+    "imports": {
+      "three": "https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js",
+      "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/"
+    }
+  }
+  </script>
+  <script src="https://cdn.jsdelivr.net/npm/gsap@3.12.5/dist/gsap.min.js"></script>
+  <!-- opentype.js: parse CJK OTF/TTF so we can extrude real 3D glyphs (window.opentype). -->
+  <script src="https://cdn.jsdelivr.net/npm/opentype.js@1.3.4/dist/opentype.min.js"></script>
+</head>
+<body>
+  <!-- The WebGL canvas is mounted here by the renderer. -->
+  <div id="app"></div>
+
+  <!-- Fine film grain + vignette overlay (pure CSS, pointer-events:none). -->
+  <div id="grain" aria-hidden="true"></div>
+  <div id="vignette" aria-hidden="true"></div>
+
+  <!-- Loading veil — minimal: a thin brightening line under faint 想法. -->
+  <div id="loader" aria-hidden="true">
+    <div class="loader-glyph">想法</div>
+    <div class="loader-track"><div class="loader-bar"></div></div>
+    <div class="loader-sub">preparing weight, gravity, and data…</div>
+  </div>
+
+  <!-- No-WebGL fallback. -->
+  <noscript>
+    <div class="fallback-note">需要启用 JavaScript 才能播放这段开场动画。</div>
+  </noscript>
+  <div id="webgl-fallback" class="fallback-note" hidden>
+    你的浏览器或环境不支持 WebGL，无法播放本动画。
+  </div>
+
+  <!-- Tiny sound hint: browsers block audio until a gesture. -->
+  <button id="sound-hint" class="ghost-btn" type="button" title="点击开启声音 / click for sound">
+    <span class="ic"> ♪ </span><span class="lbl">声音 off</span>
+  </button>
+
+  <!-- Replay button — low opacity until hover (desktop) / always tappable (mobile). -->
+  <button id="replay" class="ghost-btn" type="button" title="重新播放 / replay" hidden>
+    <span class="ic"> ↺ </span><span class="lbl">重新播放</span>
+  </button>
+
+  <!-- Main entry module. -->
+  <script type="module" src="./src/main.js"></script>
+</body>
+</html>
