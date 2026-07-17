@@ -1126,7 +1126,7 @@
                         }
                     }
                 }
-                this.position.set(0.5, 70, 0.5);
+                this.position.set(0.5, 80, 0.5);
             }
 
             update(dt, controls) {
@@ -1198,7 +1198,7 @@
             resolveCollision(axis) {
                 const minX = Math.floor(this.position.x - this.width / 2);
                 const maxX = Math.floor(this.position.x + this.width / 2);
-                const minY = Math.floor(this.position.y);
+                const minY = Math.floor(this.position.y - 0.5);
                 const maxY = Math.floor(this.position.y + this.height);
                 const minZ = Math.floor(this.position.z - this.width / 2);
                 const maxZ = Math.floor(this.position.z + this.width / 2);
