@@ -125,7 +125,7 @@
     <div class="card">
       <a class="thumb-wrap" href="demos/idea-to-binary/omp-glm-5-2/" target="_blank"><img class="thumb" src="assets/idea-to-binary/omp-glm-5-2/thumb.png"><div class="overlay"><span>▶ Play</span></div></a>
       <div class="card-body"><span class="badge green">Runs</span><h3>GLM-5.2</h3><div class="model">OMP · zhipu-coding-plan</div>
-        <div class="stats"><span class="k">Lines</span><span class="v">~400</span><span class="k">Three.js</span><span class="v">✓</span><span class="k">Binary</span><span class="v">✓</span><span class="k">Fixes</span><span class="v">0</span></div>
+        <div class="stats"><span class="k">Lines</span><span class="v">~1270</span><span class="k">Three.js</span><span class="v">✓</span><span class="k">3D depth</span><span class="v">✓ 1.1u extrude</span><span class="k">Fixes</span><span class="v">6</span></div>
         <div class="actions"><a class="btn primary" href="demos/idea-to-binary/omp-glm-5-2/" target="_blank">Play</a></div></div>
     </div>
     <div class="card" style="opacity:.5">
@@ -136,12 +136,14 @@
   </div>
   <details class="cmp-wrap"><summary>Feature comparison table</summary>
     <table class="cmp-table"><thead><tr><th>Dimension</th><th>Kimi K3</th><th>DeepSeek V4</th><th>GLM-5.2</th><th>Claude</th></tr></thead><tbody>
-      <tr><td>Three.js font rendering</td><td class="yes">✓ opentype.js</td><td class="yes">✓ canvas mode</td><td class="yes">✓ canvas mode</td><td class="no">✗ blank</td></tr>
+      <tr><td>Three.js font rendering</td><td class="yes">✓ opentype.js</td><td class="yes">✓ NotoSansCJK</td><td class="yes">✓ fontTools extrude (3D depth 1.1u)</td><td class="no">✗ blank</td></tr>
       <tr><td>Particle effects</td><td class="yes">✓</td><td class="yes">✓</td><td class="yes">✓</td><td class="yes">✓</td></tr>
       <tr><td>Binary code transition</td><td class="yes">✓</td><td class="yes">✓</td><td class="yes">✓</td><td class="yes">✓</td></tr>
       <tr><td>GSAP timeline</td><td class="yes">✓</td><td class="no">✗</td><td class="no">✗</td><td class="yes">✓</td></tr>
       <tr><td>Camera movement</td><td class="yes">✓</td><td class="yes">✓</td><td class="yes">✓</td><td class="yes">✓</td></tr>
       <tr><td>Boot without fixes</td><td class="yes">✓</td><td class="yes">✓</td><td class="yes">✓</td><td class="no">✗ blank</td></tr>
+      <tr><td>Cool-blue gated to binary only</td><td class="yes">✓ 0-2 px pre</td><td class="no">✗ 113k px in intro</td><td class="yes">✓ 0 px pre</td><td class="no">— blank</td></tr>
+      <tr><td>Browser self-verification</td><td class="yes">✓ screenshot QA harness</td><td class="no">✗ none</td><td class="yes">✓ 6-bug fix loop</td><td class="no">✗ model said "cannot run"</td></tr>
     </tbody></table>
   </details>
 </div>
